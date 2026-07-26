@@ -1,0 +1,16 @@
+node_modules/
+.next/
+.env*
+.dev.vars
+.wrangler/
+.playwright-mcp/
+test-results/
+playwright-report/
+coverage/
+*.tsbuildinfo
+/*.png
+/*-snapshot.md
+.tmp/
+debug.log
+.DS_Store
+Thumbs.db
