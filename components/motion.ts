@@ -1,7 +1,6 @@
 "use client";
 
 import gsap from "gsap";
-import { Observer } from "gsap/Observer";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useSyncExternalStore } from "react";
 
@@ -10,7 +9,7 @@ const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
 export function registerMotion() {
   if (registered || typeof window === "undefined") return;
-  gsap.registerPlugin(Observer, ScrollTrigger);
+  gsap.registerPlugin(ScrollTrigger);
   ScrollTrigger.config({ ignoreMobileResize: true });
   ScrollTrigger.defaults({ invalidateOnRefresh: true });
   registered = true;
@@ -35,4 +34,4 @@ export function usePrefersReducedMotion() {
   );
 }
 
-export { gsap, Observer, ScrollTrigger };
+export { gsap, ScrollTrigger };

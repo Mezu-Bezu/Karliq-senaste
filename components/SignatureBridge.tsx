@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { gsap, Observer, prefersReducedMotion, registerMotion, ScrollTrigger } from "./motion";
+import { gsap, prefersReducedMotion, registerMotion, ScrollTrigger } from "./motion";
 import styles from "./SignatureBridge.module.css";
 
 const MOBILE_SCROLL_QUERY = "(max-width: 760px) and (pointer: coarse)";
@@ -118,129 +118,74 @@ export default function SignatureBridge() {
         return;
       }
 
-      let displayedProgress = 0;
-      let targetProgress = 0;
-      let governorFrame = 0;
-      let lastFrameTime = 0;
-      let lastTouchTime = Number.NEGATIVE_INFINITY;
-      let locked = false;
-      let lockScrollY = 0;
-      let queuedDirection = 1;
-      let bypassUntil = 0;
-      let bridgeTrigger: ScrollTrigger | null = null;
+      let playback: gsap.core.Tween | null = null;
+      let lastTouchMove = Number.NEGATIVE_INFINITY;
 
-      const renderGovernedProgress = (progress: number) => {
-        displayedProgress = gsap.utils.clamp(0, 1, progress);
-        timeline.progress(displayedProgress).pause();
-        renderProgress(displayedProgress);
+      const finishPlayback = () => {
+        playback = null;
+        stage.classList.remove(styles.mobileFixed);
+        root.dataset.mobileScrollGoverned = "false";
       };
 
-      const release = (direction: 1 | -1) => {
-        if (!bridgeTrigger) return;
-        locked = false;
-        root.dataset.mobileScrollGoverned = "false";
-        touchObserver.disable();
-        bypassUntil = performance.now() + MOBILE_TOUCH_MOMENTUM_MS;
-        const destination =
-          direction > 0 ? bridgeTrigger.end + 2 : bridgeTrigger.start - 2;
-        window.requestAnimationFrame(() => {
-          window.scrollTo(0, destination);
-          ScrollTrigger.update();
+      const playAtCappedSpeed = (direction: 1 | -1) => {
+        if (playback?.isActive()) return;
+
+        const start = direction > 0 ? 0 : 1;
+        const end = direction > 0 ? 1 : 0;
+        const state = { progress: start };
+        timeline.progress(start).pause();
+        renderProgress(start);
+        stage.classList.add(styles.mobileFixed);
+        root.dataset.mobileScrollGoverned = "true";
+
+        playback = gsap.to(state, {
+          progress: end,
+          duration: Math.abs(end - start) / MOBILE_MAX_PROGRESS_PER_SECOND,
+          ease: "none",
+          onUpdate: () => {
+            timeline.progress(state.progress).pause();
+            renderProgress(state.progress);
+          },
+          onComplete: finishPlayback,
         });
       };
 
-      const advanceGovernor = (time: number) => {
-        if (!lastFrameTime) lastFrameTime = time;
-        const elapsed = Math.min(0.05, Math.max(0, (time - lastFrameTime) / 1000));
-        lastFrameTime = time;
-        const distance = targetProgress - displayedProgress;
-        const step = MOBILE_MAX_PROGRESS_PER_SECOND * elapsed;
-
-        if (Math.abs(distance) <= Math.max(step, 0.0005)) {
-          renderGovernedProgress(targetProgress);
-          governorFrame = 0;
-          lastFrameTime = 0;
-
-          if (targetProgress >= 0.999 && queuedDirection > 0) release(1);
-          else if (targetProgress <= 0.001 && queuedDirection < 0) release(-1);
-          return;
-        }
-
-        renderGovernedProgress(displayedProgress + Math.sign(distance) * step);
-        governorFrame = window.requestAnimationFrame(advanceGovernor);
+      const markTouchMove = () => {
+        lastTouchMove = performance.now();
       };
+      window.addEventListener("touchmove", markTouchMove, { passive: true });
 
-      const startGovernor = () => {
-        if (governorFrame) return;
-        lastFrameTime = 0;
-        governorFrame = window.requestAnimationFrame(advanceGovernor);
-      };
+      const isTouchDriven = () => performance.now() - lastTouchMove <= 900;
 
-      const touchObserver = Observer.create({
-        target: window,
-        type: "touch",
-        preventDefault: true,
-        lockAxis: true,
-        tolerance: 2,
-        onChangeY: (self) => {
-          if (!locked) return;
-          const delta = -self.deltaY / Math.max(640, window.innerHeight * 1.05);
-          if (Math.abs(delta) < 0.001) return;
-          queuedDirection = delta > 0 ? 1 : -1;
-          targetProgress = gsap.utils.clamp(0, 1, targetProgress + delta);
-          startGovernor();
-        },
-      });
-      touchObserver.disable();
-
-      const activateLock = (direction: 1 | -1, self: ScrollTrigger) => {
-        if (locked || performance.now() < bypassUntil) return;
-        locked = true;
-        queuedDirection = direction;
-        displayedProgress = direction > 0 ? 0 : 1;
-        targetProgress = displayedProgress;
-        lockScrollY = direction > 0 ? self.start : self.end;
-        renderGovernedProgress(displayedProgress);
-        root.dataset.mobileScrollGoverned = "true";
-        window.scrollTo(0, lockScrollY);
-        touchObserver.enable();
-      };
-
-      const markTouch = () => {
-        lastTouchTime = performance.now();
-      };
-      window.addEventListener("touchstart", markTouch, { passive: true });
-
-      const isTouchDriven = () =>
-        performance.now() - lastTouchTime <= MOBILE_TOUCH_MOMENTUM_MS;
-
-      bridgeTrigger = ScrollTrigger.create({
+      const bridgeTrigger = ScrollTrigger.create({
         trigger: root,
         start: "top top",
         end: "bottom bottom",
-        onEnter: (self) => {
-          if (isTouchDriven()) activateLock(1, self);
+        onEnter: () => {
+          if (isTouchDriven()) playAtCappedSpeed(1);
         },
-        onEnterBack: (self) => {
-          if (isTouchDriven()) activateLock(-1, self);
+        onEnterBack: () => {
+          if (isTouchDriven()) playAtCappedSpeed(-1);
         },
         onUpdate: (self) => {
-          if (locked) return;
+          if (playback?.isActive()) return;
           if (isTouchDriven() && self.isActive) {
-            activateLock(self.direction > 0 ? 1 : -1, self);
-          } else if (!isTouchDriven()) {
-            renderGovernedProgress(self.progress);
+            playAtCappedSpeed(self.direction > 0 ? 1 : -1);
+          } else {
+            timeline.progress(self.progress).pause();
+            renderProgress(self.progress);
           }
         },
       });
 
       root.dataset.mobileScrollGoverned = "false";
-      renderGovernedProgress(bridgeTrigger.progress);
+      timeline.progress(bridgeTrigger.progress).pause();
+      renderProgress(bridgeTrigger.progress);
 
       removeMobileGovernor = () => {
-        window.cancelAnimationFrame(governorFrame);
-        window.removeEventListener("touchstart", markTouch);
-        touchObserver.kill();
+        playback?.kill();
+        window.removeEventListener("touchmove", markTouchMove);
+        stage.classList.remove(styles.mobileFixed);
         delete root.dataset.mobileScrollGoverned;
         delete root.dataset.bridgeProgress;
       };

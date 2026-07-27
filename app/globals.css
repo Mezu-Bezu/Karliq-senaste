@@ -89,6 +89,17 @@ body::before {
   mix-blend-mode: multiply;
 }
 
+/* A viewport-fixed backing layer gives modern iPhone Safari a persistent
+   bottom-edge colour to sample without adding any document height. */
+body::after {
+  position: fixed;
+  z-index: -1;
+  inset: -100vh 0;
+  background: #6d28d9;
+  content: "";
+  pointer-events: none;
+}
+
 body.menu-open {
   overflow: hidden;
 }
