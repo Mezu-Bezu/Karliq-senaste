@@ -30,6 +30,7 @@ export default function SignatureBridge() {
     if (!root || !stage || !route || !carrier || !pointerField) return;
 
     const reducedMotion = prefersReducedMotion();
+    const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
     const routeLength = route.getTotalLength();
     route.style.strokeDasharray = `${routeLength}`;
     route.style.strokeDashoffset = reducedMotion ? "0" : `${routeLength}`;
@@ -48,10 +49,22 @@ export default function SignatureBridge() {
         Math.min(routeLength, routeLength * carrierProgress + 2),
       );
       const angle = Math.atan2(next.y - point.y, next.x - point.x) * (180 / Math.PI);
-      carrier.setAttribute(
-        "transform",
-        `translate(${point.x} ${point.y}) rotate(${angle})`,
-      );
+      if (coarsePointer) {
+        // The route intentionally fills a tall phone viewport. Its SVG is
+        // therefore stretched more vertically than horizontally, so counter
+        // that stretch for the circular Karliq marker only.
+        const bounds = route.ownerSVGElement?.getBoundingClientRect();
+        const scaleX = (bounds?.width ?? 1200) / 1200;
+        const scaleY = (bounds?.height ?? 500) / 500;
+        const compensateX = scaleX > 0 ? scaleY / scaleX : 1;
+        carrier.setAttribute(
+          "transform",
+          `translate(${point.x} ${point.y}) scale(${compensateX} 1)`,
+        );
+        return;
+      }
+
+      carrier.setAttribute("transform", `translate(${point.x} ${point.y}) rotate(${angle})`);
     };
 
     if (reducedMotion) {
@@ -73,7 +86,9 @@ export default function SignatureBridge() {
             trigger: root,
             start: "top top",
             end: "bottom bottom",
-            scrub: 0.65,
+            // Native touch scrolling arrives in bursts. A longer scrub keeps
+            // this section's story at a calm, readable pace on phones.
+            scrub: coarsePointer ? 1.25 : 0.65,
             onUpdate: ({ progress }) => {
               const routeProgress = gsap.utils.clamp(0, 1, (progress - 0.1) / 0.78);
               route.style.strokeDashoffset = `${routeLength * (1 - routeProgress)}`;
@@ -143,6 +158,19 @@ export default function SignatureBridge() {
     const progress = [0.08, 0.52, 0.91][index];
     route.style.strokeDashoffset = `${routeLength * (1 - progress)}`;
     const point = route.getPointAtLength(routeLength * progress);
+
+    if (window.matchMedia("(pointer: coarse)").matches) {
+      const bounds = route.ownerSVGElement?.getBoundingClientRect();
+      const scaleX = (bounds?.width ?? 1200) / 1200;
+      const scaleY = (bounds?.height ?? 500) / 500;
+      const compensateX = scaleX > 0 ? scaleY / scaleX : 1;
+      carrier.setAttribute(
+        "transform",
+        `translate(${point.x} ${point.y}) scale(${compensateX} 1)`,
+      );
+      return;
+    }
+
     carrier.setAttribute("transform", `translate(${point.x} ${point.y})`);
   };
 
