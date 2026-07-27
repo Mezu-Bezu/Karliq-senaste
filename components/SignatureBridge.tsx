@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { gsap, prefersReducedMotion, registerMotion, ScrollTrigger } from "./motion";
+import { gsap, Observer, prefersReducedMotion, registerMotion, ScrollTrigger } from "./motion";
 import styles from "./SignatureBridge.module.css";
 
 const MOBILE_SCROLL_QUERY = "(max-width: 760px) and (pointer: coarse)";
@@ -122,27 +122,31 @@ export default function SignatureBridge() {
       let targetProgress = 0;
       let governorFrame = 0;
       let lastFrameTime = 0;
-      let lastInputTime = performance.now();
       let lastTouchTime = Number.NEGATIVE_INFINITY;
-      let touching = false;
-      let settingScroll = false;
+      let locked = false;
+      let lockScrollY = 0;
+      let queuedDirection = 1;
+      let bypassUntil = 0;
       let bridgeTrigger: ScrollTrigger | null = null;
-
-      const setGovernedScroll = (progress: number) => {
-        if (!bridgeTrigger) return;
-        const distance = bridgeTrigger.end - bridgeTrigger.start;
-        if (distance <= 0) return;
-
-        settingScroll = true;
-        window.scrollTo(0, bridgeTrigger.start + distance * progress);
-        ScrollTrigger.update();
-        settingScroll = false;
-      };
 
       const renderGovernedProgress = (progress: number) => {
         displayedProgress = gsap.utils.clamp(0, 1, progress);
         timeline.progress(displayedProgress).pause();
         renderProgress(displayedProgress);
+      };
+
+      const release = (direction: 1 | -1) => {
+        if (!bridgeTrigger) return;
+        locked = false;
+        root.dataset.mobileScrollGoverned = "false";
+        touchObserver.disable();
+        bypassUntil = performance.now() + MOBILE_TOUCH_MOMENTUM_MS;
+        const destination =
+          direction > 0 ? bridgeTrigger.end + 2 : bridgeTrigger.start - 2;
+        window.requestAnimationFrame(() => {
+          window.scrollTo(0, destination);
+          ScrollTrigger.update();
+        });
       };
 
       const advanceGovernor = (time: number) => {
@@ -154,86 +158,79 @@ export default function SignatureBridge() {
 
         if (Math.abs(distance) <= Math.max(step, 0.0005)) {
           renderGovernedProgress(targetProgress);
-          setGovernedScroll(displayedProgress);
           governorFrame = 0;
           lastFrameTime = 0;
-          root.dataset.mobileScrollGoverned = "false";
+
+          if (targetProgress >= 0.999 && queuedDirection > 0) release(1);
+          else if (targetProgress <= 0.001 && queuedDirection < 0) release(-1);
           return;
         }
 
         renderGovernedProgress(displayedProgress + Math.sign(distance) * step);
-        setGovernedScroll(displayedProgress);
         governorFrame = window.requestAnimationFrame(advanceGovernor);
       };
 
       const startGovernor = () => {
         if (governorFrame) return;
-        root.dataset.mobileScrollGoverned = "true";
         lastFrameTime = 0;
         governorFrame = window.requestAnimationFrame(advanceGovernor);
       };
 
-      const markTouchStart = () => {
-        touching = true;
-        lastTouchTime = performance.now();
-      };
-      const markTouchMove = () => {
-        lastTouchTime = performance.now();
-      };
-      const markTouchEnd = () => {
-        touching = false;
-        lastTouchTime = performance.now();
+      const touchObserver = Observer.create({
+        target: window,
+        type: "touch",
+        preventDefault: true,
+        lockAxis: true,
+        tolerance: 2,
+        onChangeY: (self) => {
+          if (!locked) return;
+          const delta = -self.deltaY / Math.max(640, window.innerHeight * 1.05);
+          if (Math.abs(delta) < 0.001) return;
+          queuedDirection = delta > 0 ? 1 : -1;
+          targetProgress = gsap.utils.clamp(0, 1, targetProgress + delta);
+          startGovernor();
+        },
+      });
+      touchObserver.disable();
+
+      const activateLock = (direction: 1 | -1, self: ScrollTrigger) => {
+        if (locked || performance.now() < bypassUntil) return;
+        locked = true;
+        queuedDirection = direction;
+        displayedProgress = direction > 0 ? 0 : 1;
+        targetProgress = displayedProgress;
+        lockScrollY = direction > 0 ? self.start : self.end;
+        renderGovernedProgress(displayedProgress);
+        root.dataset.mobileScrollGoverned = "true";
+        window.scrollTo(0, lockScrollY);
+        touchObserver.enable();
       };
 
-      window.addEventListener("touchstart", markTouchStart, { passive: true });
-      window.addEventListener("touchmove", markTouchMove, { passive: true });
-      window.addEventListener("touchend", markTouchEnd, { passive: true });
-      window.addEventListener("touchcancel", markTouchEnd, { passive: true });
+      const markTouch = () => {
+        lastTouchTime = performance.now();
+      };
+      window.addEventListener("touchstart", markTouch, { passive: true });
+
+      const isTouchDriven = () =>
+        performance.now() - lastTouchTime <= MOBILE_TOUCH_MOMENTUM_MS;
 
       bridgeTrigger = ScrollTrigger.create({
         trigger: root,
         start: "top top",
         end: "bottom bottom",
-        onRefresh: (self) => {
-          if (governorFrame) return;
-          displayedProgress = self.progress;
-          targetProgress = self.progress;
-          renderGovernedProgress(self.progress);
+        onEnter: (self) => {
+          if (isTouchDriven()) activateLock(1, self);
+        },
+        onEnterBack: (self) => {
+          if (isTouchDriven()) activateLock(-1, self);
         },
         onUpdate: (self) => {
-          if (settingScroll) return;
-
-          const now = performance.now();
-          const touchDriven =
-            touching || now - lastTouchTime <= MOBILE_TOUCH_MOMENTUM_MS;
-
-          // Anchor links and scripted jumps should remain immediate. The speed
-          // limit only applies to an actual touch gesture and its momentum.
-          if (!touchDriven && !governorFrame) {
-            targetProgress = self.progress;
+          if (locked) return;
+          if (isTouchDriven() && self.isActive) {
+            activateLock(self.direction > 0 ? 1 : -1, self);
+          } else if (!isTouchDriven()) {
             renderGovernedProgress(self.progress);
-            return;
           }
-
-          const delta = self.progress - displayedProgress;
-          if (Math.abs(delta) < 0.0005) return;
-
-          const elapsed = Math.min(
-            0.05,
-            Math.max(1 / 120, (now - lastInputTime) / 1000),
-          );
-          lastInputTime = now;
-          const allowedDelta = MOBILE_MAX_PROGRESS_PER_SECOND * elapsed;
-
-          if (!governorFrame && Math.abs(delta) <= allowedDelta * 1.15) {
-            targetProgress = self.progress;
-            renderGovernedProgress(self.progress);
-            return;
-          }
-
-          targetProgress = gsap.utils.clamp(0, 1, targetProgress + delta);
-          setGovernedScroll(displayedProgress);
-          startGovernor();
         },
       });
 
@@ -242,10 +239,8 @@ export default function SignatureBridge() {
 
       removeMobileGovernor = () => {
         window.cancelAnimationFrame(governorFrame);
-        window.removeEventListener("touchstart", markTouchStart);
-        window.removeEventListener("touchmove", markTouchMove);
-        window.removeEventListener("touchend", markTouchEnd);
-        window.removeEventListener("touchcancel", markTouchEnd);
+        window.removeEventListener("touchstart", markTouch);
+        touchObserver.kill();
         delete root.dataset.mobileScrollGoverned;
         delete root.dataset.bridgeProgress;
       };

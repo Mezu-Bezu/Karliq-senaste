@@ -58,7 +58,9 @@ html.lenis body {
 body {
   margin: 0;
   overflow-x: clip;
-  background: var(--bone);
+  /* Safari paints root overscroll from the body canvas. Keeping that canvas
+     purple extends the final section visually without adding scrollable space. */
+  background: #6d28d9;
   color: var(--ink);
   font-family: var(--font-manrope), "Segoe UI", sans-serif;
   font-size: 16px;
@@ -8926,18 +8928,6 @@ html {
 
   .closing-green {
     padding-bottom: calc(3rem + env(safe-area-inset-bottom));
-  }
-}
-
-/* Stop iPhone's root rubber-band from exposing browser-white beyond the final
-   section. This is intentionally phone-only so desktop trackpad behaviour and
-   pull-to-refresh on larger touch devices stay unchanged. */
-@media (max-width: 760px) {
-  @supports (-webkit-touch-callout: none) {
-    html,
-    body {
-      overscroll-behavior-y: none;
-    }
   }
 }
 
