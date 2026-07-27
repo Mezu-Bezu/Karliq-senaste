@@ -38,6 +38,72 @@ const viewports = [
   { name: "desktop", width: 1440, height: 900 },
 ];
 
+test("mobile touch momentum cannot skip the signature bridge animation", async ({ browser }) => {
+  const context = await browser.newContext({
+    baseURL: "http://127.0.0.1:3100",
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+  });
+  const page = await context.newPage();
+  const client = await context.newCDPSession(page);
+
+  try {
+    await page.goto("/");
+    const bridge = page.locator("#signature-bridge");
+    await page.waitForTimeout(350);
+    await bridge.evaluate((element) => {
+      const top = element.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo(0, top);
+    });
+    await expect(bridge).toHaveAttribute("data-bridge-progress", "0.000");
+    await expect
+      .poll(() => bridge.evaluate((element) => element.getBoundingClientRect().top))
+      .toBeLessThanOrEqual(2);
+
+    await client.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x: 195, y: 760 }],
+    });
+    await client.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
+      touchPoints: [{ x: 195, y: 420 }],
+    });
+    await client.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
+      touchPoints: [{ x: 195, y: 90 }],
+    });
+    await client.send("Input.dispatchTouchEvent", {
+      type: "touchEnd",
+      touchPoints: [],
+    });
+
+    await page.waitForTimeout(180);
+    const earlyState = await bridge.evaluate((element) => {
+      const sticky = element.firstElementChild?.getBoundingClientRect();
+      return {
+        governed: element.getAttribute("data-mobile-scroll-governed"),
+        progress: Number(element.getAttribute("data-bridge-progress")),
+        stickyTop: sticky?.top ?? Number.NaN,
+      };
+    });
+
+    expect(earlyState.governed).toBe("true");
+    expect(earlyState.progress).toBeGreaterThan(0);
+    expect(earlyState.progress).toBeLessThan(0.12);
+    expect(Math.abs(earlyState.stickyTop)).toBeLessThanOrEqual(2);
+
+    await page.waitForTimeout(700);
+    const laterProgress = Number(
+      await bridge.getAttribute("data-bridge-progress"),
+    );
+    expect(laterProgress).toBeGreaterThan(earlyState.progress);
+    expect(laterProgress).toBeLessThan(0.42);
+  } finally {
+    await context.close();
+  }
+});
+
 for (const viewport of viewports) {
   test(`home renders without overflow on ${viewport.name}`, async ({ page }) => {
     const consoleErrors: string[] = [];
