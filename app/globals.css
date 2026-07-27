@@ -8928,3 +8928,23 @@ html {
     padding-bottom: calc(3rem + env(safe-area-inset-bottom));
   }
 }
+
+/* Mobile menu: cover the complete visual viewport, including Safari's notch
+   and home-indicator areas, instead of leaving strips of the page visible. */
+@media (max-width: 960px) {
+  html:has(body.menu-open),
+  body.menu-open {
+    background: var(--clay);
+  }
+
+  .menu-panel {
+    inset: 0;
+    width: 100%;
+    height: 100dvh;
+    min-height: 100svh;
+    padding:
+      calc(1.35rem + env(safe-area-inset-top))
+      var(--page-gutter)
+      calc(1.4rem + env(safe-area-inset-bottom));
+  }
+}
