@@ -207,6 +207,12 @@ p {
   transform: translateY(0);
 }
 
+@media (hover: none) and (pointer: coarse) {
+  .skip-link {
+    display: none;
+  }
+}
+
 .noscript-note {
   position: fixed;
   z-index: 800;

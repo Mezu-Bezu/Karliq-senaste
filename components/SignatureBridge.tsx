@@ -4,9 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { gsap, prefersReducedMotion, registerMotion, ScrollTrigger } from "./motion";
 import styles from "./SignatureBridge.module.css";
 
-const MOBILE_SCROLL_QUERY = "(max-width: 760px) and (pointer: coarse)";
-const MOBILE_MAX_PROGRESS_PER_SECOND = 0.34;
-const MOBILE_TOUCH_MOMENTUM_MS = 850;
+type MotionPermissionState = "checking" | "ready" | "active" | "denied" | "unsupported";
+
+type PermissionAwareOrientationEvent = typeof DeviceOrientationEvent & {
+  requestPermission?: () => Promise<"granted" | "denied">;
+};
 
 const stages = [
   { number: "01", label: "Idé" },
@@ -18,10 +20,20 @@ export default function SignatureBridge() {
   const rootRef = useRef<HTMLElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const routeRef = useRef<SVGPathElement>(null);
+  const routeSceneRef = useRef<SVGSVGElement>(null);
   const carrierRef = useRef<SVGGElement>(null);
   const pointerFieldRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef(0);
   const [active, setActive] = useState(0);
+  const [motionPermission, setMotionPermission] = useState<MotionPermissionState>("checking");
+
+  useEffect(() => {
+    const supported =
+      typeof DeviceOrientationEvent !== "undefined"
+      && window.matchMedia("(pointer: coarse)").matches
+      && window.isSecureContext;
+    setMotionPermission(supported ? "ready" : "unsupported");
+  }, []);
 
   useEffect(() => {
     registerMotion();
@@ -35,7 +47,6 @@ export default function SignatureBridge() {
 
     const reducedMotion = prefersReducedMotion();
     const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
-    const governMobileScroll = window.matchMedia(MOBILE_SCROLL_QUERY).matches;
     const routeLength = route.getTotalLength();
     route.style.strokeDasharray = `${routeLength}`;
     route.style.strokeDashoffset = reducedMotion ? "0" : `${routeLength}`;
@@ -80,15 +91,13 @@ export default function SignatureBridge() {
       return;
     }
 
-    let removeMobileGovernor = () => {};
-
     const context = gsap.context(() => {
       gsap.set("[data-bridge-line]", { yPercent: 140 });
       gsap.set("[data-bridge-kicker]", { opacity: 0, y: 18 });
       gsap.set("[data-bridge-exit]", { yPercent: 105 });
 
       const timeline = gsap
-        .timeline({ paused: governMobileScroll })
+        .timeline()
         .to("[data-bridge-entry]", { yPercent: -112, duration: 0.14, ease: "power2.inOut" }, 0)
         .to("[data-bridge-line]", { yPercent: 0, duration: 0.18, stagger: 0.035, ease: "power3.out" }, 0.06)
         .to("[data-bridge-kicker]", { opacity: 1, y: 0, duration: 0.12, ease: "power2.out" }, 0.1)
@@ -106,89 +115,14 @@ export default function SignatureBridge() {
         root.dataset.bridgeProgress = clamped.toFixed(3);
       };
 
-      if (!governMobileScroll) {
-        ScrollTrigger.create({
-          trigger: root,
-          start: "top top",
-          end: "bottom bottom",
-          animation: timeline,
-          scrub: coarsePointer ? 1.25 : 0.65,
-          onUpdate: ({ progress }) => renderProgress(progress),
-        });
-        return;
-      }
-
-      let playback: gsap.core.Tween | null = null;
-      let lastTouchMove = Number.NEGATIVE_INFINITY;
-
-      const finishPlayback = () => {
-        playback = null;
-        stage.classList.remove(styles.mobileFixed);
-        root.dataset.mobileScrollGoverned = "false";
-      };
-
-      const playAtCappedSpeed = (direction: 1 | -1) => {
-        if (playback?.isActive()) return;
-
-        const start = direction > 0 ? 0 : 1;
-        const end = direction > 0 ? 1 : 0;
-        const state = { progress: start };
-        timeline.progress(start).pause();
-        renderProgress(start);
-        stage.classList.add(styles.mobileFixed);
-        root.dataset.mobileScrollGoverned = "true";
-
-        playback = gsap.to(state, {
-          progress: end,
-          duration: Math.abs(end - start) / MOBILE_MAX_PROGRESS_PER_SECOND,
-          ease: "none",
-          onUpdate: () => {
-            timeline.progress(state.progress).pause();
-            renderProgress(state.progress);
-          },
-          onComplete: finishPlayback,
-        });
-      };
-
-      const markTouchMove = () => {
-        lastTouchMove = performance.now();
-      };
-      window.addEventListener("touchmove", markTouchMove, { passive: true });
-
-      const isTouchDriven = () => performance.now() - lastTouchMove <= 900;
-
-      const bridgeTrigger = ScrollTrigger.create({
+      ScrollTrigger.create({
         trigger: root,
         start: "top top",
         end: "bottom bottom",
-        onEnter: () => {
-          if (isTouchDriven()) playAtCappedSpeed(1);
-        },
-        onEnterBack: () => {
-          if (isTouchDriven()) playAtCappedSpeed(-1);
-        },
-        onUpdate: (self) => {
-          if (playback?.isActive()) return;
-          if (isTouchDriven() && self.isActive) {
-            playAtCappedSpeed(self.direction > 0 ? 1 : -1);
-          } else {
-            timeline.progress(self.progress).pause();
-            renderProgress(self.progress);
-          }
-        },
+        animation: timeline,
+        scrub: coarsePointer ? 1.35 : 0.65,
+        onUpdate: ({ progress }) => renderProgress(progress),
       });
-
-      root.dataset.mobileScrollGoverned = "false";
-      timeline.progress(bridgeTrigger.progress).pause();
-      renderProgress(bridgeTrigger.progress);
-
-      removeMobileGovernor = () => {
-        playback?.kill();
-        window.removeEventListener("touchmove", markTouchMove);
-        stage.classList.remove(styles.mobileFixed);
-        delete root.dataset.mobileScrollGoverned;
-        delete root.dataset.bridgeProgress;
-      };
     }, root);
 
     const moveX = gsap.quickTo(pointerField, "x", {
@@ -227,10 +161,100 @@ export default function SignatureBridge() {
     return () => {
       stage.removeEventListener("pointermove", onPointerMove);
       stage.removeEventListener("pointerleave", onPointerLeave);
-      removeMobileGovernor();
       context.revert();
     };
   }, []);
+
+  useEffect(() => {
+    if (motionPermission !== "active" || prefersReducedMotion()) return;
+
+    const stage = stageRef.current;
+    const pointerField = pointerFieldRef.current;
+    const routeScene = routeSceneRef.current;
+    if (!stage || !pointerField || !routeScene) return;
+
+    const moveFieldX = gsap.quickTo(pointerField, "x", { duration: 0.45, ease: "power2.out" });
+    const moveFieldY = gsap.quickTo(pointerField, "y", { duration: 0.45, ease: "power2.out" });
+    const rotateField = gsap.quickTo(pointerField, "rotation", { duration: 0.55, ease: "power2.out" });
+    const moveRouteX = gsap.quickTo(routeScene, "x", { duration: 0.7, ease: "power2.out" });
+    const moveRouteY = gsap.quickTo(routeScene, "y", { duration: 0.7, ease: "power2.out" });
+
+    let listening = false;
+    let visible = false;
+    let originBeta: number | null = null;
+    let originGamma: number | null = null;
+
+    const reset = () => {
+      originBeta = null;
+      originGamma = null;
+      gsap.to(pointerField, { x: 0, y: 0, rotation: 0, duration: 0.45, overwrite: "auto" });
+      gsap.to(routeScene, { x: 0, y: 0, duration: 0.55, overwrite: "auto" });
+    };
+
+    const onOrientation = (event: DeviceOrientationEvent) => {
+      if (event.beta === null || event.gamma === null) return;
+      originBeta ??= event.beta;
+      originGamma ??= event.gamma;
+
+      const horizontal = gsap.utils.clamp(-1, 1, (event.gamma - originGamma) / 18);
+      const vertical = gsap.utils.clamp(-1, 1, (event.beta - originBeta) / 18);
+      moveFieldX(horizontal * 12);
+      moveFieldY(vertical * 9);
+      rotateField(horizontal * 1.4);
+      moveRouteX(horizontal * -5);
+      moveRouteY(vertical * -4);
+    };
+
+    const updateListener = () => {
+      const shouldListen = visible && !document.hidden;
+      if (shouldListen === listening) return;
+      listening = shouldListen;
+      if (listening) {
+        originBeta = null;
+        originGamma = null;
+        window.addEventListener("deviceorientation", onOrientation, { passive: true });
+      } else {
+        window.removeEventListener("deviceorientation", onOrientation);
+        reset();
+      }
+    };
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        visible = entry.isIntersecting && entry.intersectionRatio >= 0.2;
+        updateListener();
+      },
+      { threshold: [0, 0.2] },
+    );
+    const onVisibilityChange = () => updateListener();
+
+    observer.observe(stage);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("deviceorientation", onOrientation);
+      reset();
+    };
+  }, [motionPermission]);
+
+  const toggleDeviceMotion = async () => {
+    if (motionPermission === "active") {
+      setMotionPermission("ready");
+      return;
+    }
+
+    try {
+      const orientationEvent = DeviceOrientationEvent as PermissionAwareOrientationEvent;
+      const permission = orientationEvent.requestPermission
+        ? await orientationEvent.requestPermission()
+        : "granted";
+      setMotionPermission(permission === "granted" ? "active" : "denied");
+    } catch {
+      setMotionPermission("denied");
+    }
+  };
 
   const chooseStage = (index: number) => {
     activeRef.current = index;
@@ -333,8 +357,24 @@ export default function SignatureBridge() {
           </div>
         </div>
 
+        {motionPermission !== "checking" && motionPermission !== "unsupported" ? (
+          <button
+            className={styles.motionToggle}
+            type="button"
+            aria-pressed={motionPermission === "active"}
+            onClick={toggleDeviceMotion}
+          >
+            {motionPermission === "active"
+              ? "Rörelse aktiv"
+              : motionPermission === "denied"
+                ? "Tillåt rörelse i Safari"
+                : "Aktivera rörelse"}
+          </button>
+        ) : null}
+
         <svg
           className={styles.route}
+          ref={routeSceneRef}
           viewBox="0 0 1200 500"
           preserveAspectRatio="none"
           fill="none"
