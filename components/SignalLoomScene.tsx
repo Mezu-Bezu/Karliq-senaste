@@ -8,6 +8,9 @@ import * as THREE from "three";
 type SignalLoomSceneProps = {
   active: boolean;
   mobile: boolean;
+  deviceMotion: {
+    current: { x: number; y: number; shake: number };
+  };
   onReady: () => void;
 };
 
@@ -86,7 +89,7 @@ function lerpMaterialColor(
   material.color.lerp(tempColor, ease);
 }
 
-export default function SignalLoomScene({ active, mobile, onReady }: SignalLoomSceneProps) {
+export default function SignalLoomScene({ active, mobile, deviceMotion, onReady }: SignalLoomSceneProps) {
   return (
     <Canvas
       className="signal-loom-canvas"
@@ -112,14 +115,23 @@ export default function SignalLoomScene({ active, mobile, onReady }: SignalLoomS
           <Lightformer color="#d8b4fe" intensity={2.4} position={[5, -2, 2]} scale={[3, 5, 1]} />
           <Lightformer color="#8b5cf6" intensity={1.5} position={[0, 4, -4]} rotation-y={Math.PI} scale={[7, 2, 1]} />
         </Environment>
-        <SignalField mobile={mobile} onReady={onReady} />
+        <SignalField mobile={mobile} deviceMotion={deviceMotion} onReady={onReady} />
       </Suspense>
     </Canvas>
   );
 }
 
-function SignalField({ mobile, onReady }: { mobile: boolean; onReady: () => void }) {
+function SignalField({
+  mobile,
+  deviceMotion,
+  onReady,
+}: {
+  mobile: boolean;
+  deviceMotion: SignalLoomSceneProps["deviceMotion"];
+  onReady: () => void;
+}) {
   const { camera, viewport } = useThree();
+  const fieldGroup = useRef<THREE.Group>(null);
   const letterMeshes = useRef<Array<THREE.Group | null>>([]);
   const jointClayMesh = useRef<THREE.InstancedMesh>(null);
   const jointBoneMesh = useRef<THREE.InstancedMesh>(null);
@@ -147,6 +159,7 @@ function SignalField({ mobile, onReady }: { mobile: boolean; onReady: () => void
   const accentIndex = useRef(0);
   const reportedReady = useRef(false);
   const introStartedAt = useRef<number | null>(null);
+  const lastShake = useRef(0);
 
   const jointGeometry = useMemo(() => createTriJointGeometry(mobile), [mobile]);
 
@@ -272,12 +285,53 @@ function SignalField({ mobile, onReady }: { mobile: boolean; onReady: () => void
       THREE.MathUtils.clamp((introTime - WORD_RELEASE_TIME + 0.04) / 0.48, 0, 1),
     );
     const frameDelta = Math.min(delta, 1 / 30);
+    const sensor = deviceMotion.current;
+    const sensorEase = 1 - Math.exp(-frameDelta * 5.5);
+
+    if (fieldGroup.current) {
+      fieldGroup.current.rotation.x = THREE.MathUtils.lerp(
+        fieldGroup.current.rotation.x,
+        mobile ? -sensor.y * 0.085 : 0,
+        sensorEase,
+      );
+      fieldGroup.current.rotation.y = THREE.MathUtils.lerp(
+        fieldGroup.current.rotation.y,
+        mobile ? sensor.x * 0.12 : 0,
+        sensorEase,
+      );
+      fieldGroup.current.position.x = THREE.MathUtils.lerp(
+        fieldGroup.current.position.x,
+        mobile ? sensor.x * 0.22 : 0,
+        sensorEase,
+      );
+      fieldGroup.current.position.y = THREE.MathUtils.lerp(
+        fieldGroup.current.position.y,
+        mobile ? -sensor.y * 0.16 : 0,
+        sensorEase,
+      );
+    }
 
     const target = centerTarget.current.set(
-      mobile ? 0 : Math.min(3, viewport.width * 0.27),
-      (mobile ? -0.55 : -0.05) - scrollProgress.current * 0.8,
+      (mobile ? sensor.x * 0.34 : Math.min(3, viewport.width * 0.27)),
+      (mobile ? -0.55 - sensor.y * 0.26 : -0.05) - scrollProgress.current * 0.8,
       -scrollProgress.current * 1.1,
     );
+
+    if (mobile && sensor.shake !== lastShake.current) {
+      lastShake.current = sensor.shake;
+      for (const body of bodies) {
+        if (!body.released) continue;
+        body.sleeping = false;
+        body.idleFrames = 0;
+        tempA.set(
+          Math.sin(body.phase * 1.7),
+          Math.cos(body.phase * 1.3),
+          Math.sin(body.phase * 0.8) * 0.55,
+        ).normalize();
+        body.velocity.addScaledVector(tempA, 1.35);
+        body.angularVelocity.addScaledVector(tempA, 0.8);
+      }
+    }
 
     if (pointerActive.current && !mobile) {
       raycaster.setFromCamera(pointer.current, camera);
@@ -342,7 +396,7 @@ function SignalField({ mobile, onReady }: { mobile: boolean; onReady: () => void
   });
 
   return (
-    <>
+    <group ref={fieldGroup}>
       {LETTERS.map((letter, index) => (
         <group
           ref={(group) => { letterMeshes.current[index] = group; }}
@@ -390,7 +444,7 @@ function SignalField({ mobile, onReady }: { mobile: boolean; onReady: () => void
       <instancedMesh ref={ringGraphiteMesh} args={[ringGeometry, undefined, instanceCounts.ringGraphite]} frustumCulled={false}>
         <meshPhysicalMaterial ref={ringGraphiteMaterial} color={COLOR_PALETTES[0].dark} roughness={0.28} metalness={0.14} clearcoat={0.45} clearcoatRoughness={0.25} />
       </instancedMesh>
-    </>
+    </group>
   );
 }
 

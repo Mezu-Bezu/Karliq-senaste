@@ -3,6 +3,18 @@
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 
+export type HeroDeviceMotion = {
+  x: number;
+  y: number;
+  shake: number;
+};
+
+type SensorPermission = "unknown" | "granted" | "denied";
+
+type PermissionAwareSensor = {
+  requestPermission?: () => Promise<"granted" | "denied">;
+};
+
 const SignalLoomScene = dynamic(() => import("./SignalLoomScene"), {
   ssr: false,
   loading: () => null,
@@ -14,6 +26,8 @@ export default function HeroVisual() {
   const [active, setActive] = useState(true);
   const [ready, setReady] = useState(false);
   const [mobile, setMobile] = useState(false);
+  const deviceMotion = useRef<HeroDeviceMotion>({ x: 0, y: 0, shake: 0 });
+  const sensorPermission = useRef<SensorPermission>("unknown");
 
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -52,6 +66,126 @@ export default function HeroVisual() {
     observer.observe(root);
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const orientationSensor = typeof DeviceOrientationEvent === "undefined"
+      ? null
+      : DeviceOrientationEvent as unknown as PermissionAwareSensor;
+    const motionSensor = typeof DeviceMotionEvent === "undefined"
+      ? null
+      : DeviceMotionEvent as unknown as PermissionAwareSensor;
+
+    if (!root || !mobile || !enhanced || !active || reducedMotion || !orientationSensor) {
+      deviceMotion.current.x = 0;
+      deviceMotion.current.y = 0;
+      return;
+    }
+
+    let disposed = false;
+    let listening = false;
+    let originBeta: number | null = null;
+    let originGamma: number | null = null;
+    let lastShake = Number.NEGATIVE_INFINITY;
+
+    const resetTilt = () => {
+      originBeta = null;
+      originGamma = null;
+      deviceMotion.current.x = 0;
+      deviceMotion.current.y = 0;
+    };
+
+    const onOrientation = (event: DeviceOrientationEvent) => {
+      if (event.beta === null || event.gamma === null) return;
+      originBeta ??= event.beta;
+      originGamma ??= event.gamma;
+      deviceMotion.current.x = Math.max(-1, Math.min(1, (event.gamma - originGamma) / 22));
+      deviceMotion.current.y = Math.max(-1, Math.min(1, (event.beta - originBeta) / 22));
+    };
+
+    const onMotion = (event: DeviceMotionEvent) => {
+      const linear = event.acceleration;
+      const gravity = event.accelerationIncludingGravity;
+      const linearMagnitude = linear
+        ? Math.hypot(linear.x ?? 0, linear.y ?? 0, linear.z ?? 0)
+        : 0;
+      const gravityMagnitude = gravity
+        ? Math.abs(Math.hypot(gravity.x ?? 0, gravity.y ?? 0, gravity.z ?? 0) - 9.81)
+        : 0;
+      if (Math.max(linearMagnitude, gravityMagnitude) < 5.5) return;
+
+      const now = performance.now();
+      if (now - lastShake < 650) return;
+      lastShake = now;
+      deviceMotion.current.shake += 1;
+    };
+
+    const detach = () => {
+      if (!listening) return;
+      listening = false;
+      window.removeEventListener("deviceorientation", onOrientation);
+      window.removeEventListener("devicemotion", onMotion);
+      resetTilt();
+      root.dataset.deviceMotion = "paused";
+    };
+
+    const attach = () => {
+      if (listening || !active || document.hidden) return;
+      listening = true;
+      originBeta = null;
+      originGamma = null;
+      window.addEventListener("deviceorientation", onOrientation, { passive: true });
+      window.addEventListener("devicemotion", onMotion, { passive: true });
+      root.dataset.deviceMotion = "active";
+    };
+
+    const requestSensors = async () => {
+      window.removeEventListener("touchend", requestSensors);
+      try {
+        const orientationRequest = orientationSensor.requestPermission?.() ?? Promise.resolve("granted" as const);
+        const motionRequest = motionSensor?.requestPermission?.() ?? Promise.resolve("granted" as const);
+        const [orientationResult, motionResult] = await Promise.all([orientationRequest, motionRequest]);
+        if (disposed) return;
+        const granted = orientationResult === "granted" && motionResult === "granted";
+        sensorPermission.current = granted ? "granted" : "denied";
+        root.dataset.deviceMotion = granted ? "active" : "denied";
+        if (granted) attach();
+      } catch {
+        if (disposed) return;
+        sensorPermission.current = "denied";
+        root.dataset.deviceMotion = "denied";
+      }
+    };
+
+    const onVisibilityChange = () => {
+      if (document.hidden) detach();
+      else if (sensorPermission.current === "granted") attach();
+    };
+
+    const needsGesture = Boolean(
+      orientationSensor.requestPermission || motionSensor?.requestPermission,
+    );
+    if (sensorPermission.current === "granted") {
+      attach();
+    } else if (sensorPermission.current === "unknown" && needsGesture) {
+      root.dataset.deviceMotion = "awaiting-touch";
+      window.addEventListener("touchend", requestSensors, { once: true, passive: true });
+    } else if (sensorPermission.current === "unknown") {
+      sensorPermission.current = "granted";
+      attach();
+    } else {
+      root.dataset.deviceMotion = "denied";
+    }
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      disposed = true;
+      window.removeEventListener("touchend", requestSensors);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      detach();
+    };
+  }, [active, enhanced, mobile]);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -144,7 +278,12 @@ export default function HeroVisual() {
       aria-hidden="true"
     >
       {enhanced ? (
-        <SignalLoomScene active={active} mobile={mobile} onReady={() => setReady(true)} />
+        <SignalLoomScene
+          active={active}
+          mobile={mobile}
+          deviceMotion={deviceMotion}
+          onReady={() => setReady(true)}
+        />
       ) : null}
       <div className="hero-atmosphere" />
     </div>

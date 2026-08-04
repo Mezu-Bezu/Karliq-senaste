@@ -180,6 +180,68 @@ test("hero fallback remains tactile when WebGL is unavailable", async ({ page })
   await expect(world).toHaveAttribute("data-fallback-pulse", "");
 });
 
+test("mobile hero requests native sensor permission on first touch and pauses offscreen", async ({ browser }) => {
+  const context = await browser.newContext({
+    baseURL: "http://127.0.0.1:3100",
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+  });
+  const page = await context.newPage();
+
+  await page.addInitScript(() => {
+    const sensorWindow = window as typeof window & { __sensorRequests: number };
+    sensorWindow.__sensorRequests = 0;
+    const webglPrototypes = [
+      window.WebGLRenderingContext?.prototype,
+      window.WebGL2RenderingContext?.prototype,
+    ].filter(Boolean) as unknown as Array<{
+      getExtension: (name: string) => unknown;
+    }>;
+    for (const prototype of webglPrototypes) {
+      const originalGetExtension = prototype.getExtension;
+      prototype.getExtension = function getExtension(this: unknown, name: string) {
+        if (name === "WEBGL_debug_renderer_info") return null;
+        return Reflect.apply(originalGetExtension, this, [name]);
+      };
+    }
+    const grant = () => {
+      sensorWindow.__sensorRequests += 1;
+      return Promise.resolve("granted");
+    };
+
+    if (typeof DeviceOrientationEvent !== "undefined") {
+      Object.defineProperty(DeviceOrientationEvent, "requestPermission", {
+        configurable: true,
+        value: grant,
+      });
+    }
+    if (typeof DeviceMotionEvent !== "undefined") {
+      Object.defineProperty(DeviceMotionEvent, "requestPermission", {
+        configurable: true,
+        value: grant,
+      });
+    }
+  });
+
+  try {
+    await page.goto("/");
+    const heroWorld = page.locator(".hero-world");
+    await expect(heroWorld).not.toContainText(/Aktivera rörelse|Tillåt rörelse/);
+    await expect(heroWorld).toHaveAttribute("data-device-motion", "awaiting-touch");
+    await page.touchscreen.tap(195, 520);
+    await expect(heroWorld).toHaveAttribute("data-device-motion", "active");
+    expect(await page.evaluate(() => (
+      window as typeof window & { __sensorRequests: number }
+    ).__sensorRequests)).toBeGreaterThanOrEqual(1);
+
+    await page.evaluate(() => window.scrollTo(0, window.innerHeight * 2));
+    await expect(heroWorld).toHaveAttribute("data-device-motion", "paused");
+  } finally {
+    await context.close();
+  }
+});
+
 test("the motion controller follows live reduced-motion changes", async ({ page }) => {
   const pageErrors: string[] = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));

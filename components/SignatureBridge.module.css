@@ -108,37 +108,6 @@
   will-change: transform;
 }
 
-.motionToggle {
-  position: absolute;
-  right: clamp(1rem, 3.1vw, 3.8rem);
-  bottom: 5.25rem;
-  z-index: 6;
-  display: none;
-  min-height: 2.6rem;
-  padding: 0.65rem 0.9rem;
-  border: 1px solid rgb(22 8 38 / 45%);
-  border-radius: 999px;
-  color: var(--ink);
-  background: rgb(250 246 255 / 86%);
-  box-shadow: 0 0.7rem 1.8rem rgb(22 8 38 / 12%);
-  font: inherit;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  backdrop-filter: blur(10px);
-}
-
-.motionToggle[aria-pressed="true"] {
-  color: var(--paper);
-  background: var(--ink);
-}
-
-.motionToggle:focus-visible {
-  outline: 3px solid var(--ink);
-  outline-offset: 3px;
-}
-
 .artifact {
   position: absolute;
   display: flex;
@@ -414,10 +383,6 @@
 
   .sticky {
     min-height: 36rem;
-  }
-
-  .motionToggle {
-    display: block;
   }
 
   .entryWipe {
