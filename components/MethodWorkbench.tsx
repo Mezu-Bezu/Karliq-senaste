@@ -8,29 +8,29 @@ const modules = [
     id: "message",
     number: "01",
     title: "Riktning",
-    output: "En idé att bygga runt",
-    text: "Vi väljer en huvudidé, ett tempo och vad besökaren ska göra.",
+    output: "Ett tydligt behov",
+    text: "Vi går igenom vad som fungerar, vad som tar tid och vad du vill förändra.",
   },
   {
     id: "structure",
     number: "02",
-    title: "Design",
-    output: "Ett system, inte en mall",
-    text: "Jag sätter typ, färg och grid tills sidan har ett eget system.",
+    title: "Förslag",
+    output: "Något konkret att ta ställning till",
+    text: "Du får ett förslag på upplägg, funktion och form innan arbetet går vidare.",
   },
   {
     id: "interface",
     number: "03",
-    title: "Rörelse",
-    output: "Inget rör sig utan skäl",
-    text: "Vi bestämmer exakt vad som ska reagera på scroll, pekare och klick.",
+    title: "Utveckling",
+    output: "Från förslag till funktion",
+    text: "Lösningen tar form. Vi provar, justerar och ser till att delarna fungerar ihop.",
   },
   {
     id: "launch",
     number: "04",
-    title: "Bygg",
-    output: "Sajten, inte en prototyp",
-    text: "Jag kodar, optimerar och testar från 320 px till stor skärm.",
+    title: "Lansering",
+    output: "Redo för din vardag",
+    text: "Vi testar i praktiken och går igenom hur allt fungerar, så att du kan ta det i bruk.",
   },
 ] as const;
 
@@ -65,12 +65,11 @@ export default function MethodWorkbench() {
 
   return (
     <section className="method-scene" id="method" ref={rootRef} aria-labelledby="method-title">
-      <div className="method-thread-entry" aria-hidden="true"><span /><i /></div>
       <div className="method-sticky">
         <div className="method-heading method-heading--without-index" data-reveal="mask">
           <div>
-            <h2 id="method-title">Från skiss till publicerad sida.</h2>
-            <p>Fyra steg, från riktning till lansering.</p>
+            <h2 id="method-title">Från första fråga till färdig lösning.</h2>
+            <p>Du är med från första samtalet till det fungerar i praktiken.</p>
           </div>
         </div>
 

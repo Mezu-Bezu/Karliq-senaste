@@ -31,7 +31,7 @@ export default function SignatureBridge() {
 
     const reducedMotion = prefersReducedMotion();
     const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
-    const routeLength = route.getTotalLength();
+    let routeLength = route.getTotalLength();
     route.style.strokeDasharray = `${routeLength}`;
     route.style.strokeDashoffset = reducedMotion ? "0" : `${routeLength}`;
 
@@ -93,19 +93,28 @@ export default function SignatureBridge() {
       const renderProgress = (progress: number) => {
         const clamped = gsap.utils.clamp(0, 1, progress);
         const routeProgress = gsap.utils.clamp(0, 1, (clamped - 0.1) / 0.78);
+        routeLength = route.getTotalLength();
+        route.style.strokeDasharray = `${routeLength}`;
         route.style.strokeDashoffset = `${routeLength * (1 - routeProgress)}`;
         placeCarrier(routeProgress);
         selectStage(Math.min(2, Math.floor(routeProgress * 2.75)));
         root.dataset.bridgeProgress = clamped.toFixed(3);
       };
 
+      timeline.to([route, root.querySelector(`.${styles.routeGhost}`)], {
+        attr: { d: "M-80 320C140 470 280 120 481 320C670 510 690 100 873 230C1040 360 1100 80 1280 130" },
+        duration: 0.78, ease: "none",
+      }, 0.1);
+
+      // Render the route from the scrubbed playhead so its marker and the
+      // rest of the scene settle together after wheel or touch input.
+      timeline.eventCallback("onUpdate", () => renderProgress(timeline.progress()));
       ScrollTrigger.create({
         trigger: root,
         start: "top top",
         end: "bottom bottom",
         animation: timeline,
         scrub: coarsePointer ? 1.35 : 0.65,
-        onUpdate: ({ progress }) => renderProgress(progress),
       });
     }, root);
 
@@ -201,19 +210,19 @@ export default function SignatureBridge() {
         <div className={styles.grain} aria-hidden="true" />
 
         <header className={styles.heading}>
-          <p data-bridge-kicker>Från första strecket till sista raden</p>
+          <p data-bridge-kicker>En lösning som hänger ihop</p>
           <h2 id="signature-bridge-title">
             <span className={styles.lineMask}>
               <span data-bridge-line style={{ display: "inline-block" }}>
                 <span data-bridge-title style={{ display: "inline-block" }}>
-                  Samma hand.
+                  Från idé.
                 </span>
               </span>
             </span>
             <span className={styles.lineMask}>
               <span data-bridge-line style={{ display: "inline-block" }}>
                 <span data-bridge-title="reverse" style={{ display: "inline-block" }}>
-                  Hela vägen.
+                  Till vardag.
                 </span>
               </span>
             </span>
@@ -311,7 +320,7 @@ export default function SignatureBridge() {
         </div>
 
         <p className={styles.srOnly}>
-          Samma person formar idén, regisserar rörelsen och skriver koden.
+          Idé, form och teknik blir en lösning att använda i vardagen.
         </p>
       </div>
     </section>

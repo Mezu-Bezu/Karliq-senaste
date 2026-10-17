@@ -96,7 +96,7 @@ for (const viewport of viewports) {
     page.on("pageerror", (error) => pageErrors.push(error.message));
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await page.goto("/");
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("Form som rör sig.");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Webb som lyfter");
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
     await expect(page.locator("#contact")).toBeVisible();
     const dimensions = await page.evaluate(() => ({
@@ -146,7 +146,7 @@ test("reduced motion uses the static hero and readable stacked scenes", async ({
   await expect(page.locator(".signal-loom-canvas")).toHaveCount(0);
   await expect(page.locator(".static-loom")).toBeVisible();
   await expect(page.locator(".static-word")).toContainText("KARLIQ");
-  await expect(page.getByRole("heading", { name: "Från skiss till publicerad sida." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Från första fråga till färdig lösning." })).toBeVisible();
 });
 
 test("hero fallback remains tactile when WebGL is unavailable", async ({ page }) => {
@@ -309,7 +309,7 @@ test("contact area exposes direct contact and social links", async ({ page }) =>
   await expect(page.getByRole("heading", { name: /Låt oss bygga/ })).toBeVisible();
   await expect(page.getByRole("link", { name: /Starta ett projekt/ })).toHaveAttribute(
     "href",
-    "mailto:erikkarlsson09@hotmail.com",
+    "mailto:contact@karliq.se",
   );
   await expect(page.getByRole("link", { name: /Erik Karlsson/ })).toHaveAttribute(
     "href",
@@ -422,7 +422,7 @@ test("keyboard reaches home reveals and completes them without manual scrolling"
   await expectFocusedRevealToBeComplete(processButton);
 
   const founderCta = page.getByRole("link", { name: /Prata projekt/ });
-  await tabUntilFocused(page, founderCta, 5);
+  await tabUntilFocused(page, founderCta, 12);
   await expectFocusedRevealToBeComplete(founderCta);
 
   const closingCta = page.locator("#contact .closing-mail");

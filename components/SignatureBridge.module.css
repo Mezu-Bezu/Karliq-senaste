@@ -85,9 +85,9 @@
 .lineMask {
   display: block;
   overflow: hidden;
-  padding: 0.04em 0.08em 0.28em;
-  margin-top: -0.04em;
-  margin-bottom: -0.24em;
+  padding: 0.2em 0.12em 0.32em;
+  margin-top: -0.2em;
+  margin-bottom: -0.12em;
   margin-left: -0.08em;
 }
 

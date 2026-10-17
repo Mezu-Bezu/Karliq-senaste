@@ -726,7 +726,8 @@ main {
 .hero-line {
   display: block;
   overflow: hidden;
-  padding: 0 0.06em 0.16em 0;
+  padding: 0.15em 0.1em 0.2em 0;
+  margin-top: -0.15em;
 }
 
 .hero-line>span {
@@ -1219,7 +1220,8 @@ main {
   max-width: 14ch;
   font-size: clamp(2.65rem, 5.2vw, 6rem);
   font-weight: 520;
-  line-height: 0.92;
+  line-height: 1.04;
+  padding-block: 0.12em 0.16em;
 }
 
 .method-heading p {
@@ -5746,6 +5748,8 @@ body::before {
 .hero-green {
   min-height: max(100svh, 49rem);
   background: var(--bone);
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .hero-green::after {
@@ -7378,7 +7382,8 @@ body::before {
   max-width: 13ch;
   font-size: clamp(3rem, 6.2vw, 7rem);
   font-weight: 520;
-  line-height: 0.91;
+  line-height: 1.04;
+  padding-block: 0.12em 0.16em;
 }
 
 .agency-services-head>p {
@@ -7656,11 +7661,7 @@ body::before {
   height: clamp(6rem, 12vh, 10rem);
   margin-top: -1px;
   margin-bottom: -1px;
-  background: linear-gradient(to bottom,
-      #f6f0fd 0%,
-      rgb(222 205 245 / 85%) 30%,
-      rgb(82 52 140 / 80%) 65%,
-      var(--ink) 100%);
+  background: var(--ink);
   pointer-events: none;
 }
 

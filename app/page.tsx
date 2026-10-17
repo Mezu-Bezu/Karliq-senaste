@@ -7,6 +7,8 @@ import LogoMark from "../components/LogoMark";
 import MethodWorkbench from "../components/MethodWorkbench";
 import SignatureBridge from "../components/SignatureBridge";
 import SiteHeader from "../components/SiteHeader";
+import IntroSignal from "../components/IntroSignal";
+import introStyles from "../components/IntroSignal.module.css";
 
 const linkedin = "https://www.linkedin.com/in/erik-karlsson-b41329424/";
 const instagram = "https://www.instagram.com/karliq.se/";
@@ -19,70 +21,69 @@ export default function Home() {
       <main id="main-content" tabIndex={-1}>
         <HomeMotion />
 
-        <section className="hero hero-green" id="top" aria-labelledby="hero-title">
-          <HeroVisual />
-          <div className="hero-grain" aria-hidden="true" />
-          <svg className="green-thread green-thread-hero" viewBox="0 0 1600 980" preserveAspectRatio="none" fill="none" aria-hidden="true">
-            <path d="M-90 102C266 136 502 310 514 558C528 830 225 889 192 1115" />
-          </svg>
+        <div className={introStyles.sequence}>
+          <section className="hero hero-green" id="top" aria-labelledby="hero-title">
+            <HeroVisual />
+            <div className="hero-grain" aria-hidden="true" />
 
-          <div className="hero-copy">
-            <p className="hero-note hero-intro-item">Karliq / digital studio / Jönköpings län</p>
-            <h1 id="hero-title">
-              <span className="hero-line"><span>Form som rör sig.</span></span>
-              <span className="hero-line"><span>Kod som svarar.</span></span>
-            </h1>
-            <div className="hero-bottom">
-              <p className="hero-lead hero-intro-item">
-                Jag designar, automatiserar och kodar varje projekt själv — från första skiss till färdig lösning.
-              </p>
-              <div className="hero-actions hero-intro-item">
-                <a className="button button-primary" href="#services" data-magnetic>
-                  Utforska tjänster
-                </a>
-                <a className="button button-secondary" href="#contact" data-magnetic>
-                  Starta projekt
-                </a>
+            <div className="hero-copy">
+              <p className="hero-note hero-intro-item">Karliq / digital studio / Jönköpings län</p>
+              <h1 id="hero-title">
+                <span className="hero-line"><span>Webb som lyfter.</span></span>
+                <span className="hero-line"><span>Flöden som jobbar.</span></span>
+              </h1>
+              <div className="hero-bottom">
+                <p className="hero-lead hero-intro-item">
+                  Jag bygger webbsidor som sticker ut och automation som frigör din tid.
+                </p>
+                <div className="hero-actions hero-intro-item">
+                  <a className="button button-primary" href="#services" data-magnetic>
+                    Utforska tjänster
+                  </a>
+                  <a className="button button-secondary" href="#contact" data-magnetic>
+                    Starta projekt
+                  </a>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="hero-side-note hero-intro-item" aria-hidden="true">
-            <p>Design<br />Motion<br />Automation<br />Development</p>
-          </div>
-          <p className="sr-only">
-            Karliqs tredimensionella bokstäver och kopplingsformer rör sig i ett grönt
-            fält och reagerar på muspekaren.
-          </p>
-          <div className="hero-route" aria-hidden="true">
-            <span className="hero-route-progress" />
-            <p>Utforska Karliq</p>
-          </div>
-        </section>
-
-        <section className="manifesto-scene" id="approach" aria-labelledby="approach-title">
-          <svg className="green-thread green-thread-manifesto" viewBox="0 0 1600 1120" preserveAspectRatio="none" fill="none" aria-hidden="true">
-            <path d="M416-120C372 188 523 410 845 432C1182 454 1374 260 1338-20M1338-20C1294 304 1088 468 1082 750C1078 936 1192 1000 1408 972" />
-          </svg>
-          <div className="manifesto-copy" data-reveal="mask">
-            <p>Erik Karlssons digitala studio i Jönköpings län.</p>
-            <h2 id="approach-title">Idén ska<br />överleva bygget.</h2>
-          </div>
-          <div className="manifesto-note" data-reveal="line">
-            <p>
-              Därför ritar, animerar och kodar jag i samma flöde.
-            </p>
-            <a href="#method">Se processen</a>
-          </div>
-          <div className="manifesto-window" data-reveal="mask" aria-hidden="true">
-            <div className="manifesto-browser">
-              <span>K</span><i /><i />
-              <div><b /><b /><b /></div>
+            <div className="hero-side-note hero-intro-item" aria-hidden="true">
+              <p>Webbdesign<br />Utveckling<br />Automation</p>
             </div>
-          </div>
-        </section>
+            <p className="sr-only">
+              Karliqs tredimensionella bokstäver och kopplingsformer rör sig i ett lila
+              fält och reagerar på muspekaren.
+            </p>
+            <div className="hero-route" aria-hidden="true">
+              <span className="hero-route-progress" />
+              <p>Utforska Karliq</p>
+            </div>
+          </section>
 
-        <MethodWorkbench />
+          <div className={introStyles.story}>
+            <IntroSignal />
+          <section className="manifesto-scene" id="approach" aria-labelledby="approach-title">
+            <div className="manifesto-copy" data-reveal="mask">
+              <p>Nyfikenhet först. Teknik sedan.</p>
+              <h2 id="approach-title">Det börjar<br />med ditt behov.</h2>
+            </div>
+            <div className="manifesto-note" data-reveal="line">
+              <p>
+                En tydligare webbplats. Färre manuella steg. Jag kopplar ihop det kunden ser med det som händer bakom.
+              </p>
+              <a href="#method">Se processen</a>
+            </div>
+            <div className="manifesto-window" aria-hidden="true">
+              <div className="manifesto-browser">
+                <span>K</span><i /><i />
+                <div><b /><b /><b /></div>
+              </div>
+            </div>
+          </section>
+          <MethodWorkbench />
+          </div>
+        </div>
+
         <SignatureBridge />
         <AgencyServices />
         <div className="services-to-founder-transition" aria-hidden="true" />
@@ -99,7 +100,7 @@ export default function Home() {
           </div>
           <div className="closing-green-copy" data-reveal="mask">
             <h2 id="contact-title">Låt oss bygga<br />något levande.</h2>
-            <a className="closing-mail" href="mailto:erikkarlsson09@hotmail.com" data-magnetic>
+            <a className="closing-mail" href="mailto:contact@karliq.se" data-magnetic>
               Starta ett projekt
             </a>
           </div>

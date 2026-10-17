@@ -81,7 +81,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           "height": 512
         },
         "telephone": "+46763050531",
-        "email": "erikkarlsson09@hotmail.com",
+        "email": "contact@karliq.se",
         "founder": {
           "@type": "Person",
           "name": "Erik Karlsson",
@@ -130,7 +130,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         </MotionProvider>
         <noscript>
           <div className="noscript-note">
-            Karliq skapar digitala upplevelser och smarta företagsflöden genom design, motion, utveckling, automation och AI. Kontakta erikkarlsson09@hotmail.com.
+            Karliq skapar digitala upplevelser och smarta företagsflöden genom design, motion, utveckling, automation och AI. Kontakta contact@karliq.se.
           </div>
         </noscript>
       </body>

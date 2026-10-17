@@ -1,6 +1,6 @@
 import LogoMark from "./LogoMark";
 
-const email = "erikkarlsson09@hotmail.com";
+const email = "contact@karliq.se";
 const linkedin = "https://www.linkedin.com/in/erik-karlsson-b41329424/";
 const instagram = "https://www.instagram.com/karliq.se/";
 

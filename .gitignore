@@ -2,7 +2,7 @@ node_modules/
 .next/
 .open-next/
 .env*
-.dev.vars
+.dev.vars*
 .wrangler/
 .playwright-mcp/
 test-results/
@@ -13,5 +13,12 @@ coverage/
 /*-snapshot.md
 .tmp/
 debug.log
+*.log
+.turbo/
+.vercel/
+*.pem
+*.key
+*.p12
+*.pfx
 .DS_Store
 Thumbs.db

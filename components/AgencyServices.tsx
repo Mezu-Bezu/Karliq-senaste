@@ -1,72 +1,108 @@
-const services = [
-  {
-    number: "01",
-    title: "Digital design",
-    description:
-      "Jag börjar med hierarkin: vad ska synas först, vad ska kännas och vad kan tas bort.",
-    deliverables: ["Creative direction", "UX/UI", "Designsystem", "Responsiv art direction"],
-    label: "Form",
-  },
-  {
-    number: "02",
-    title: "Motion & 3D",
-    description:
-      "Varje rörelse visar, svarar eller leder. Annars åker den bort.",
-    deliverables: ["Scrollregi", "Microinteractions", "WebGL & 3D", "Prototyping"],
-    label: "Rörelse",
-  },
-  {
-    number: "03",
-    title: "Utveckling",
-    description:
-      "Det du ser blir riktig Next.js-kod, testad på mobil och redo att publiceras.",
-    deliverables: ["Next.js", "Interaktiva system", "CMS & integrationer", "Lansering"],
-    label: "Kod",
-  },
-  {
-    number: "04",
-    title: "Automation & AI",
-    description:
-      "Jag bygger smarta flöden som kopplar ihop formulär, mejl, CRM och interna verktyg. AI används där den faktiskt kan tolka, sortera eller spara tid.",
-    deliverables: ["Workflow automation", "AI-assistenter", "Systemintegrationer", "Interna verktyg"],
-    label: "Flöden",
-  },
-] as const;
+"use client";
+
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
+import { gsap, registerMotion, usePrefersReducedMotion } from "./motion";
+import { logoBricks } from "./logoBricks";
+import styles from "./AgencyServices.module.css";
+
+const wallBricks = Array.from({ length: 240 }, (_, index) => ({
+  col: index % 16, row: Math.floor(index / 16),
+}));
+const transitionBricks = Array.from({ length: 64 }, (_, index) => ({ col: index % 16, row: Math.floor(index / 16) }));
 
 export default function AgencyServices() {
+  const root = useRef<HTMLElement>(null);
+  const transitionWall = useRef<HTMLDivElement>(null);
+  const [transitionHost, setTransitionHost] = useState<HTMLElement | null>(null);
+  const reduced = usePrefersReducedMotion();
+  useEffect(() => { setTransitionHost(document.querySelector<HTMLElement>("#signature-bridge [data-bridge-exit]")); }, []);
+  useEffect(() => {
+    const section = root.current;
+    if (!section) return;
+    if (reduced) { section.dataset.build = "complete"; return () => { delete section.dataset.build; }; }
+    registerMotion();
+    let timeline: gsap.core.Timeline;
+    const context = gsap.context(() => {
+      timeline = gsap.timeline({ paused: true, onComplete: () => { section.dataset.build = "complete"; } });
+      section.querySelectorAll<HTMLElement>("[data-background-brick]").forEach((brick, index) => {
+        const block = wallBricks[index];
+        const start = .2 + (14 - block.row) * .17 + ((block.col * 7) % 9) * .045;
+        timeline.fromTo(brick,
+          { y: -1500, rotation: (block.col % 3 - 1) * 5, autoAlpha: 0 },
+          { y: 0, rotation: 0, autoAlpha: 1, duration: 1.1, ease: "power2.inOut" }, start);
+      });
+      section.querySelectorAll<HTMLElement>("[data-automation-brick]").forEach((brick, index) => {
+        const block = logoBricks[index];
+        const start = .15 + (29 - block.y) * .085 + ((block.x * 7) % 11) * .018;
+        timeline.fromTo(brick,
+          { y: -1050 - block.y * 13, x: ((index * 17) % 65) - 32, rotation: ((index * 13) % 47) - 23, autoAlpha: 0 },
+          { y: 0, x: 0, rotation: 0, autoAlpha: 1, duration: .7, ease: "power2.in" }, start);
+        timeline.to(brick, { y: -2.5, duration: .065, ease: "power1.out" }, start + .7);
+        timeline.to(brick, { y: 0, duration: .12, ease: "power2.in" }, start + .765);
+      });
+      transitionWall.current?.querySelectorAll<HTMLElement>("[data-transition-brick]").forEach((brick, index) => {
+        const block = transitionBricks[index];
+        timeline.fromTo(brick,
+          { y: -600, autoAlpha: 0 },
+          { y: 0, autoAlpha: 1, duration: .8, ease: "power2.inOut" },
+          3 + (3 - block.row) * .15 + (block.col % 4) * .035);
+      });
+    }, section);
+    let inView = false;
+    const update = () => {
+      if (inView && !document.hidden) { section.dataset.build = timeline?.progress() === 1 ? "complete" : "playing"; timeline?.play(); }
+      else timeline?.pause();
+    };
+    const observer = new IntersectionObserver(([entry]) => { inView = entry.isIntersecting; update(); }, { threshold: .25 });
+    observer.observe(section);
+    document.addEventListener("visibilitychange", update);
+    return () => { observer.disconnect(); document.removeEventListener("visibilitychange", update); context.revert(); delete section.dataset.build; };
+  }, [reduced, transitionHost]);
+
   return (
-    <section className="agency-services" id="services" aria-labelledby="services-title">
-      <header className="agency-services-head" data-reveal="mask">
-        <div>
-          <span>Vad Karliq gör</span>
-          <h2 id="services-title">Design. Kod. Smarta flöden.</h2>
-        </div>
-        <p>
-          Jag bygger både det kunden ser och flödena företaget behöver bakom.
-        </p>
-      </header>
-
-      <div className="service-ledger" data-reveal="line">
-        {services.map((service) => (
-          <article className="service-ledger-row" key={service.number}>
-            <span className="service-number">{service.number}</span>
-            <div className="service-ledger-copy">
-              <div>
-                <h3>{service.title}</h3>
-                <span>{service.label}</span>
-              </div>
-              <p>{service.description}</p>
-            </div>
-            <ul aria-label={`Detta ingår i ${service.title}`}>
-              {service.deliverables.map((item) => <li key={item}>{item}</li>)}
-            </ul>
-          </article>
+    <>
+    {transitionHost && createPortal(
+      <div ref={transitionWall} className={styles.transitionWall} aria-hidden="true" data-lego-transition>
+        {transitionBricks.map((block, index) => (
+          <div key={index} className={`${styles.wallBrick} ${styles.transitionBrick}`} data-transition-brick style={{
+            "--col": block.col, "--row": block.row,
+            "--mobile-col": index % 8, "--mobile-row": Math.floor(index / 8),
+          } as CSSProperties}><i /><i /><i /><i /></div>
         ))}
-      </div>
-
-      <div className="services-closure" data-reveal="line">
-        <p>Du pratar med samma person som formar, animerar och kodar.</p>
+      </div>, transitionHost)}
+    <section ref={root} id="services" className={styles.section} aria-labelledby="services-title" data-automation-scene>
+      <div className={styles.sticky}>
+        <div className={styles.wall} aria-hidden="true">
+          {wallBricks.map((block, index) => (
+            <div key={index} className={styles.wallBrick} data-background-brick style={{
+              "--col": block.col, "--row": block.row,
+              "--mobile-col": index % 8, "--mobile-row": Math.floor(index / 8),
+            } as CSSProperties}>
+              <i /><i /><i /><i />
+            </div>
+          ))}
+        </div>
+        <header className={`agency-services-head ${styles.heading}`}>
+          <span className={styles.eyebrow}>Automation</span>
+          <h2 id="services-title">Jag kopplar ihop<br />dina verktyg.</h2>
+          <p>Eller bygger ett nytt. Så att du slipper flytta information, följa upp och göra samma sak för hand.</p>
+          <a href="#contact" className={styles.cta}>Berätta vad som tar tid <span aria-hidden="true">↗</span></a>
+        </header>
+        <div className={styles.visual} role="img" aria-label="Karliq-loggan och bakgrunden byggs automatiskt av fallande legoklossar.">
+          <div className={styles.logo} data-brick-logo>
+            {logoBricks.map((block, index) => (
+              <div key={index} className={styles.brick} data-automation-brick
+                style={{ left: block.x * 13, top: block.y * 13, width: block.w * 13 - .65 }}>
+                <div className={styles.studs} aria-hidden="true">
+                  {Array.from({ length: block.w }, (_, stud) => <i key={stud} />)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
+    </>
   );
 }

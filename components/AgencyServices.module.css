@@ -1,0 +1,48 @@
+.section { position: relative; color: var(--ink); background: var(--bone); }
+.sticky { position: relative; height: 100svh; min-height: 45rem; overflow: hidden; isolation: isolate; background: var(--bone); }
+.wall { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.wallBrick { position: absolute; left: calc(var(--col) * 6.25%); top: calc(var(--row) * 100% / 15); width: calc(6.25% + 1px); height: calc(100% / 15 + 1px); background: #12071f; box-shadow: inset 0 1px 0 #ffffff08, inset 1px 0 0 #ffffff05, inset 0 -3px 0 #090310; display: grid; grid-template-columns: 1fr 1fr; place-items: center; padding: clamp(3px, .7vw, 12px); }
+.wallBrick i { display: block; width: 25%; aspect-ratio: 2.5; border-radius: 50%; background: #1c0e2b; box-shadow: 0 2px 0 #0b0414; }
+.heading.heading { position: relative; z-index: 3; display: block; width: 46%; margin: 0; padding: clamp(8rem, 23svh, 16rem) 0 4rem var(--page-gutter); }
+.heading.heading { color: #fff; mix-blend-mode: difference; }
+.eyebrow { display: block; margin-bottom: 2.2rem; font-size: .8rem; color: inherit; opacity: .65; }
+.heading.heading h2 { max-width: 11ch; margin: 0; padding: .12em .1em .17em 0; font-size: clamp(3.3rem, 5.2vw, 6.3rem); font-weight: 440; line-height: 1.06; letter-spacing: -.065em; }
+.heading.heading > p { max-width: 32ch; margin: 1.5rem 0 2.3rem; font-size: clamp(1rem, 1.2vw, 1.15rem); line-height: 1.65; color: inherit; opacity: .8; }
+.cta { display: inline-flex; align-items: center; gap: 2rem; border-bottom: 1px solid #b4a7c2; padding: .8rem 0; font-size: .85rem; }
+.cta span { font-size: 1.3rem; transition: transform .3s; }
+.cta:hover span { transform: translate(3px, -3px); }
+.cta:focus-visible { outline: 2px solid #6d28d9; outline-offset: 6px; }
+.visual { position: absolute; z-index: 1; right: 2%; top: 0; width: 53%; height: 100%; pointer-events: none; }
+.logo { position: absolute; top: 50%; left: 50%; width: 624px; height: 390px; transform: translate(-50%, -40%) rotate(-5deg); }
+.brick { position: absolute; height: 12.3px; border-radius: 1.4px; background: #6036a0; border-top: 1px solid #8b64bf; box-shadow: 0 3px 0 #3c1a70, 1px 3px 1px #32115d35; }
+.brick:nth-child(5n) { background: #6a40a8; }
+.brick:nth-child(7n) { background: #57318e; }
+.studs { position: absolute; display: flex; justify-content: space-around; inset: -2px 0 auto; }
+.studs i { display: block; width: 7px; height: 3.5px; border-radius: 50%; background: #8760b9; box-shadow: 0 1.5px 0 #4c267e; }
+@media (max-width: 1200px) { .logo { transform: translate(-50%, -37%) rotate(-5deg) scale(.8); } }
+@media (max-width: 900px) { .heading.heading { width: 52%; } .visual { right: -5%; } .logo { transform: translate(-50%, -32%) rotate(-5deg) scale(.65); } }
+@media (max-width: 900px) {
+  .section { height: auto; min-height: 0; }
+  .sticky { min-height: 47rem; }
+  .heading.heading { width: 100%; padding: 6.8rem var(--page-gutter) 0; }
+  .eyebrow { margin-bottom: 1.1rem; font-size: .72rem; }
+  .heading.heading h2 { max-width: 14ch; font-size: clamp(2.6rem, 9.8vw, 4rem); }
+  .heading.heading > p { max-width: 32ch; font-size: .94rem; margin: .9rem 0 1rem; }
+  .cta { font-size: .76rem; }
+  .visual { width: 100%; right: 0; top: 24rem; height: calc(100% - 24rem); }
+  .logo { top: 50%; transform: translate(-50%, -42%) rotate(-5deg) scale(.7); }
+}
+@media (max-width: 360px) { .logo { transform: translate(-50%, -42%) rotate(-5deg) scale(.45); } .heading.heading { padding-top: 6rem; } }
+@media (prefers-reduced-motion: reduce) { .section { height: auto; min-height: 0; } .sticky { position: relative; } }
+
+@media (max-width: 720px) { .logo { transform: translate(-50%, -42%) rotate(-5deg) scale(.54); } }
+@media (max-width: 360px) { .logo { transform: translate(-50%, -42%) rotate(-5deg) scale(.45); } }
+
+@media (max-width: 720px) { .wallBrick { left: calc(var(--mobile-col) * 12.5%); top: calc(var(--mobile-row) * 100% / 30); width: calc(12.5% + 1px); height: calc(100% / 30 + 1px); } }
+
+/* Continue the same wall into the preceding scene's curved exit. */
+.transitionWall { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; }
+.transitionBrick { top: calc(var(--row) * 25%); height: calc(25% + 1px); }
+@media (max-width: 720px) {
+  .transitionWall .transitionBrick { top: calc(var(--mobile-row) * 12.5%); height: calc(12.5% + 1px); }
+}
