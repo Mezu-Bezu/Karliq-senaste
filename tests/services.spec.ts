@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { logoBricks } from "../components/logoBricks";
 
 test("logo and full background build automatically without scrolling", async ({ page }) => {
-  await page.goto('/#services');
+  await page.goto('/sv#services');
   const scene = page.locator('[data-automation-scene]');
   await expect(scene).toHaveAttribute('data-build', 'playing');
   const position = await page.evaluate(() => scrollY);
@@ -28,7 +28,7 @@ for (const width of [320, 390, 768, 1440]) {
   test(`logo and background fit at ${width}px with reduced motion`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.goto('/#services');
+    await page.goto('/sv#services');
     const scene = page.locator('[data-automation-scene]');
     await expect(scene).toHaveAttribute('data-build', 'complete');
     await expect(scene.getByRole('link', { name: 'Berätta vad som tar tid' })).toHaveAttribute('href', '#contact');

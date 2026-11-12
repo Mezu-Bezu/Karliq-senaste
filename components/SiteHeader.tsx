@@ -2,72 +2,36 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { instagram, linkedin, pagePath, type Locale, type SitePage } from "../lib/site";
 import LogoMark from "./LogoMark";
 
-const navItems = [
-  { label: "Process", href: "/#method" },
-  { label: "Tjänster", href: "/#services" },
-  { label: "Studio", href: "/#founder" },
-];
-
-const MOBILE_NAV_FOCUS_KEY = "karliq:mobile-navigation-focus";
-
-type PendingMobileNavigation = {
-  hash: string;
-  pathname: string;
-  search: string;
+const navigation = {
+  sv: {
+    sections: ["Tjänster", "Projekt", "Om Karliq"],
+    home: "Karliq, startsida",
+    primary: "Primär navigering",
+    mobile: "Mobil navigering",
+    contact: "Kontakt",
+    open: "Öppna meny",
+    close: "Stäng menyn",
+  },
+  en: {
+    sections: ["Services", "Projects", "About"],
+    home: "Karliq, home",
+    primary: "Primary navigation",
+    mobile: "Mobile navigation",
+    contact: "Contact",
+    open: "Open menu",
+    close: "Close menu",
+  },
 };
 
-function decodeHash(hash: string) {
-  try {
-    return decodeURIComponent(hash.replace(/^#/, ""));
-  } catch {
-    return "";
-  }
-}
-
-function readPendingMobileNavigation(): PendingMobileNavigation | null {
-  try {
-    const value = JSON.parse(
-      window.sessionStorage.getItem(MOBILE_NAV_FOCUS_KEY) ?? "null",
-    ) as Partial<PendingMobileNavigation> | null;
-    if (
-      !value
-      || typeof value.hash !== "string"
-      || typeof value.pathname !== "string"
-      || typeof value.search !== "string"
-    ) {
-      return null;
-    }
-    return value as PendingMobileNavigation;
-  } catch {
-    return null;
-  }
-}
-
-function rememberMobileNavigation(anchor: HTMLAnchorElement) {
-  try {
-    const url = new URL(anchor.href);
-    const pending: PendingMobileNavigation = {
-      hash: url.hash,
-      pathname: url.pathname,
-      search: url.search,
-    };
-    window.sessionStorage.setItem(MOBILE_NAV_FOCUS_KEY, JSON.stringify(pending));
-  } catch {
-    // Navigation still works if storage is unavailable.
-  }
-}
+const sectionIds = ["services", "work", "founder"];
 
 function focusNavigationDestination(destination: HTMLElement) {
   const addedTabIndex = !destination.hasAttribute("tabindex");
   if (addedTabIndex) destination.setAttribute("tabindex", "-1");
   destination.focus({ preventScroll: true });
-
-  if (document.activeElement !== destination) {
-    if (addedTabIndex) destination.removeAttribute("tabindex");
-    return false;
-  }
 
   if (addedTabIndex) {
     destination.addEventListener(
@@ -76,16 +40,23 @@ function focusNavigationDestination(destination: HTMLElement) {
       { once: true },
     );
   }
-  return true;
 }
 
-export default function SiteHeader() {
+export default function SiteHeader({ locale }: { locale: Locale }) {
   const pathname = usePathname();
+  const text = navigation[locale];
+  const home = pagePath(locale);
+  const currentPage: SitePage = pathname === pagePath(locale, "tour")
+    ? "tour"
+    : pathname === pagePath(locale, "privacy") ? "privacy" : "home";
+  const otherLocale = locale === "sv" ? "en" : "sv";
+  const otherLanguage = locale === "sv" ? "English" : "Svenska";
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [tone, setTone] = useState<"light" | "dark" | "green">("light");
   const menuRef = useRef<HTMLElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const pendingSection = useRef<string | null>(null);
 
   useEffect(() => {
     const update = () => {
@@ -110,27 +81,34 @@ export default function SiteHeader() {
     update();
     window.addEventListener("scroll", update, { passive: true });
     return () => window.removeEventListener("scroll", update);
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     const main = document.querySelector<HTMLElement>("main");
-    const footer = document.querySelector<HTMLElement>(".site-footer");
 
     if (!menuOpen) {
       main?.removeAttribute("inert");
-      footer?.removeAttribute("inert");
       document.body.classList.remove("menu-open");
+      const section = pendingSection.current;
+      pendingSection.current = null;
+      if (section) {
+        const frame = requestAnimationFrame(() => {
+          const destination = document.getElementById(section);
+          if (destination) focusNavigationDestination(destination);
+        });
+        return () => cancelAnimationFrame(frame);
+      }
       return;
     }
 
     main?.setAttribute("inert", "");
-    footer?.setAttribute("inert", "");
     document.body.classList.add("menu-open");
 
     const focusable = Array.from(
       menuRef.current?.querySelectorAll<HTMLElement>('a[href], button:not([disabled])') ?? [],
     );
     focusable[0]?.focus();
+    if (menuButtonRef.current) focusable.unshift(menuButtonRef.current);
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -156,137 +134,93 @@ export default function SiteHeader() {
     return () => {
       window.removeEventListener("keydown", onKeyDown);
       main?.removeAttribute("inert");
-      footer?.removeAttribute("inert");
       document.body.classList.remove("menu-open");
     };
   }, [menuOpen]);
 
-  useEffect(() => {
-    if (menuOpen) return;
-
-    let frame = 0;
-    const timers: number[] = [];
-    const focusPendingDestination = () => {
-      const pending = readPendingMobileNavigation();
-      if (
-        !pending
-        || pending.pathname !== window.location.pathname
-        || pending.search !== window.location.search
-      ) {
-        return;
-      }
-
-      const destinationId = decodeHash(pending.hash);
-      if (pending.hash && decodeHash(window.location.hash) !== destinationId) return;
-
-      const destination = (
-        destinationId ? document.getElementById(destinationId) : null
-      ) ?? document.querySelector<HTMLElement>("main");
-      if (!destination || destination.closest("[inert]")) return;
-      if (!focusNavigationDestination(destination)) return;
-
-      try {
-        window.sessionStorage.removeItem(MOBILE_NAV_FOCUS_KEY);
-      } catch {
-        // Focus has already moved; storage cleanup is best-effort.
-      }
-    };
-    const scheduleFocus = () => {
-      window.cancelAnimationFrame(frame);
-      timers.forEach((timer) => window.clearTimeout(timer));
-      timers.length = 0;
-      frame = window.requestAnimationFrame(focusPendingDestination);
-      for (const delay of [120, 420, 900]) {
-        timers.push(window.setTimeout(focusPendingDestination, delay));
-      }
-    };
-
-    scheduleFocus();
-    window.addEventListener("hashchange", scheduleFocus);
-    window.addEventListener("pageshow", scheduleFocus);
-    return () => {
-      window.cancelAnimationFrame(frame);
-      timers.forEach((timer) => window.clearTimeout(timer));
-      window.removeEventListener("hashchange", scheduleFocus);
-      window.removeEventListener("pageshow", scheduleFocus);
-    };
-  }, [menuOpen, pathname]);
-
-  const closeMenu = (restoreFocus = false) => {
-    setMenuOpen(false);
-    if (restoreFocus) window.requestAnimationFrame(() => menuButtonRef.current?.focus());
-  };
-
-  const sectionHref = (href: string) => (pathname === "/" ? href.slice(1) : href);
+  const sectionHref = (id: string) => `${pathname === home ? "" : home}#${id}`;
+  const languageLink = (
+    <a
+      className="language-link"
+      href={pagePath(otherLocale, currentPage)}
+      hrefLang={otherLocale}
+      lang={otherLocale}
+      data-micro
+      data-no-transition
+    >
+      {otherLanguage}
+    </a>
+  );
 
   return (
     <header className="site-header" data-scrolled={scrolled} data-open={menuOpen} data-tone={tone}>
-      <a className="wordmark" href={sectionHref("/#top")} aria-label="Karliq, startsida" onClick={() => closeMenu()}>
+      <a className="wordmark" href={sectionHref("top")} aria-label={text.home} inert={menuOpen}>
         <LogoMark size={28} />
         <span>KARLIQ</span>
         <i aria-hidden="true" />
       </a>
 
-      <nav className="desktop-nav" aria-label="Primär navigering">
-        {navItems.map((item) => (
-          <a className="nav-swap" href={sectionHref(item.href)} key={item.href} data-magnetic>
-            <span>{item.label}</span>
-            <span aria-hidden="true">{item.label}</span>
+      <nav className="desktop-nav" aria-label={text.primary}>
+        {sectionIds.map((id, index) => (
+          <a className="nav-swap" href={sectionHref(id)} key={id} data-magnetic>
+            <span>{text.sections[index]}</span>
+            <span aria-hidden="true">{text.sections[index]}</span>
           </a>
         ))}
       </nav>
 
-      <a className="header-cta" href={sectionHref("/#contact")} data-magnetic>
-        <span>Starta projekt</span>
-      </a>
-
-      <button
-        className="menu-toggle"
-        ref={menuButtonRef}
-        type="button"
-        aria-expanded={menuOpen}
-        aria-controls="site-menu"
-        aria-label={menuOpen ? "Stäng meny" : "Öppna meny"}
-        onClick={() => setMenuOpen((current) => !current)}
-      >
-        <span />
-        <span />
-      </button>
+      <div className="header-actions">
+        <span className="header-language" inert={menuOpen}>{languageLink}</span>
+        <a className="header-cta" href={sectionHref("contact")} data-magnetic>
+          <span>{text.contact}</span>
+        </a>
+        <button
+          className="menu-toggle"
+          ref={menuButtonRef}
+          type="button"
+          aria-expanded={menuOpen}
+          aria-controls="site-menu"
+          aria-label={menuOpen ? text.close : text.open}
+          onClick={() => setMenuOpen((current) => !current)}
+        >
+          <span />
+          <span />
+        </button>
+      </div>
 
       <nav
         className="menu-panel"
         id="site-menu"
         ref={menuRef}
-        aria-label="Mobil navigering"
+        aria-label={text.mobile}
         aria-hidden={!menuOpen}
         inert={!menuOpen}
       >
         <div className="menu-panel-top">
-          <span>Karliq / Jönköpings län</span>
-          <span>{new Date().getFullYear()}</span>
+          <span>Karliq</span>
         </div>
         <div className="menu-links">
-          {navItems.map((item, index) => (
+          {[...sectionIds, "contact"].map((id, index) => (
             <a
-              href={sectionHref(item.href)}
-              key={item.href}
+              href={sectionHref(id)}
+              key={id}
               style={{ "--menu-index": index } as React.CSSProperties}
-              onClick={(event) => {
-                rememberMobileNavigation(event.currentTarget);
-                closeMenu();
+              onClick={() => {
+                if (pathname === home) pendingSection.current = id;
+                setMenuOpen(false);
               }}
             >
-              <small>0{index + 1}</small>
-              <span>{item.label}</span>
+              <span>{id === "contact" ? text.contact : text.sections[index]}</span>
+              <i aria-hidden="true">↗</i>
             </a>
           ))}
         </div>
         <div className="menu-panel-bottom">
           <div>
-            <a href="https://www.linkedin.com/in/erik-karlsson-b41329424/" target="_blank" rel="noreferrer">LinkedIn</a>
-            <a href="https://www.instagram.com/karliq.se/" target="_blank" rel="noreferrer">Instagram</a>
+            <a href={linkedin} target="_blank" rel="noreferrer">LinkedIn</a>
+            <a href={instagram} target="_blank" rel="noreferrer">Instagram</a>
           </div>
-          <button type="button" onClick={() => closeMenu(true)}>Stäng menyn</button>
+          {languageLink}
         </div>
       </nav>
     </header>

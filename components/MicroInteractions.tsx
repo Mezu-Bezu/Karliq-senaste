@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 
 const MICRO_TARGETS = [
+  "[data-micro]",
   ".wordmark",
   ".nav-swap",
   ".header-cta",

@@ -47,7 +47,7 @@ test("mobile signature bridge stays bounded without becoming a fixed overlay", a
   });
   const page = await context.newPage();
   try {
-    await page.goto("/");
+    await page.goto("/sv");
     const bridge = page.locator("#signature-bridge");
     await bridge.evaluate((element) => {
       const top = element.getBoundingClientRect().top + window.scrollY;
@@ -79,7 +79,7 @@ test("skip link is unavailable on touch phones", async ({ browser }) => {
   const page = await context.newPage();
 
   try {
-    await page.goto("/");
+    await page.goto("/sv");
     await expect(page.locator(".skip-link")).toBeHidden();
   } finally {
     await context.close();
@@ -95,8 +95,8 @@ for (const viewport of viewports) {
     });
     page.on("pageerror", (error) => pageErrors.push(error.message));
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
-    await page.goto("/");
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("Webb som lyfter");
+    await page.goto("/sv");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Automatisera");
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
     await expect(page.locator("#contact")).toBeVisible();
     const dimensions = await page.evaluate(() => ({
@@ -111,12 +111,12 @@ for (const viewport of viewports) {
 
 test("mobile menu traps focus and closes with Escape", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
+  await page.goto("/sv");
   const toggle = page.getByRole("button", { name: "Öppna meny" });
   await toggle.click();
   const mobileNavigation = page.getByRole("navigation", { name: "Mobil navigering" });
   await expect(mobileNavigation).toBeVisible();
-  await expect(mobileNavigation.getByRole("link", { name: /Process/ })).toBeFocused();
+  await expect(mobileNavigation.getByRole("link", { name: "Tjänster" })).toBeFocused();
   await expect(mobileNavigation.getByRole("link", { name: /Instagram/ })).toBeVisible();
   const menuBox = await mobileNavigation.boundingBox();
   const instagramBox = await mobileNavigation.getByRole("link", { name: /Instagram/ }).boundingBox();
@@ -129,24 +129,24 @@ test("mobile menu traps focus and closes with Escape", async ({ page }) => {
 
 test("mobile menu navigation moves focus to the cross-route destination", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
+  await page.goto("/sv/3d-visningar");
 
   await page.getByRole("button", { name: "Öppna meny" }).click();
   const mobileNavigation = page.getByRole("navigation", { name: "Mobil navigering" });
-  await mobileNavigation.getByRole("link", { name: /Process/ }).click();
+  await mobileNavigation.getByRole("link", { name: "Projekt" }).click();
 
-  await expect(page).toHaveURL(/\/#method$/);
-  await expect(page.locator("#method")).toBeFocused();
+  await expect(page).toHaveURL(/\/sv#work$/);
+  await expect(page.locator("#work")).toBeFocused();
   await expect(page.locator(".menu-toggle")).toHaveAttribute("aria-expanded", "false");
 });
 
 test("reduced motion uses the static hero and readable stacked scenes", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/");
+  await page.goto("/sv");
   await expect(page.locator(".signal-loom-canvas")).toHaveCount(0);
   await expect(page.locator(".static-loom")).toBeVisible();
   await expect(page.locator(".static-word")).toContainText("KARLIQ");
-  await expect(page.getByRole("heading", { name: "Från första fråga till färdig lösning." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Så går ett projekt till" })).toBeVisible();
 });
 
 test("hero fallback remains tactile when WebGL is unavailable", async ({ page }) => {
@@ -162,7 +162,7 @@ test("hero fallback remains tactile when WebGL is unavailable", async ({ page })
     } as typeof HTMLCanvasElement.prototype.getContext;
   });
   await page.setViewportSize({ width: 1280, height: 720 });
-  await page.goto("/");
+  await page.goto("/sv");
 
   const world = page.locator(".hero-world");
   const firstJoint = page.locator(".static-joint").first();
@@ -225,7 +225,7 @@ test("mobile hero requests native sensor permission on first touch and pauses of
   });
 
   try {
-    await page.goto("/");
+    await page.goto("/sv");
     const heroWorld = page.locator(".hero-world");
     await expect(heroWorld).not.toContainText(/Aktivera rörelse|Tillåt rörelse/);
     await expect(heroWorld).toHaveAttribute("data-device-motion", "awaiting-touch");
@@ -246,7 +246,7 @@ test("the motion controller follows live reduced-motion changes", async ({ page 
   const pageErrors: string[] = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/");
+  await page.goto("/sv");
 
   await expect(page.locator("html")).toHaveAttribute("data-motion", "reduced");
   await expect(page.locator("html")).not.toHaveClass(/\blenis\b/);
@@ -267,7 +267,7 @@ test("the motion controller follows live reduced-motion changes", async ({ page 
 
 test("services heading settles promptly after a fast jump", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto("/");
+  await page.goto("/sv");
   const heading = page.locator(".agency-services-head");
   await heading.scrollIntoViewIfNeeded();
 
@@ -286,11 +286,11 @@ test("hash scrolling tolerates malformed encoding and yields to user scrolling",
   page.on("pageerror", (error) => pageErrors.push(error.message));
   await page.emulateMedia({ reducedMotion: "reduce" });
 
-  await page.goto("/#%");
+  await page.goto("/sv#%");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   expect(pageErrors).toEqual([]);
 
-  await page.goto("/#services");
+  await page.goto("/sv#services");
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(500);
   await page.waitForTimeout(180);
   const scrollPositionBeforeInput = await page.evaluate(() => window.scrollY);
@@ -305,24 +305,24 @@ test("hash scrolling tolerates malformed encoding and yields to user scrolling",
 });
 
 test("contact area exposes direct contact and social links", async ({ page }) => {
-  await page.goto("/#contact");
-  await expect(page.getByRole("heading", { name: /Låt oss bygga/ })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Starta ett projekt/ })).toHaveAttribute(
+  await page.goto("/sv#contact");
+  await expect(page.getByRole("heading", { name: /Vad vill du/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: "erik@karliq.se", exact: true })).toHaveAttribute(
     "href",
-    "mailto:contact@karliq.se",
+    "mailto:erik@karliq.se",
   );
   await expect(page.getByRole("link", { name: /Erik Karlsson/ })).toHaveAttribute(
     "href",
     "https://www.linkedin.com/in/erik-karlsson-b41329424/",
   );
-  await expect(page.getByRole("link", { name: /@karliq.se/ })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Instagram @karliq.se" })).toHaveAttribute(
     "href",
     "https://www.instagram.com/karliq.se/",
   );
 });
 
 test("public pages contain no pricing or budget prompts", async ({ page }) => {
-  for (const path of ["/"]) {
+  for (const path of ["/sv", "/en"]) {
     await page.goto(path);
     await expect(page.locator("body")).not.toContainText(/\b\d[\d\s]*\s*kr\b/i);
     await expect(page.locator("body")).not.toContainText(/Budgetsignal/i);
@@ -331,9 +331,9 @@ test("public pages contain no pricing or budget prompts", async ({ page }) => {
 
 test("micro interactions respond to pointer, keyboard and live reduced motion", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
-  await page.goto("/");
+  await page.goto("/sv");
 
-  const primaryCta = page.getByRole("link", { name: /Utforska tjänster/ });
+  const primaryCta = page.getByRole("link", { name: "Se tjänster", exact: true });
   await primaryCta.hover({ position: { x: 24, y: 24 } });
   await expect(primaryCta).toHaveAttribute("data-micro-active", "pointer");
   const pointerPosition = await primaryCta.evaluate((element) =>
@@ -347,7 +347,7 @@ test("micro interactions respond to pointer, keyboard and live reduced motion", 
   await page.mouse.up();
   await expect(primaryCta).not.toHaveAttribute("data-micro-pressed", { timeout: 1_000 });
 
-  const secondaryCta = page.getByRole("link", { name: /Starta projekt/ }).first();
+  const secondaryCta = page.locator("#top").getByRole("link", { name: "Prata om ett projekt" });
   await secondaryCta.focus();
   await expect(secondaryCta).toHaveAttribute("data-micro-active", "keyboard");
 
@@ -360,17 +360,17 @@ test("micro interactions respond to pointer, keyboard and live reduced motion", 
 test("cross-route header links land on their home sections", async ({ page }) => {
   test.setTimeout(120_000);
   const targets = [
-    { name: "Process", id: "method", expectedTop: 80 },
     { name: "Tjänster", id: "services", expectedTop: 1 },
-    { name: "Studio", id: "founder", expectedTop: 1 },
-    { name: "Starta projekt", id: "contact", expectedTop: 1 },
+    { name: "Projekt", id: "work", expectedTop: 80 },
+    { name: "Om Karliq", id: "founder", expectedTop: 1 },
+    { name: "Kontakt", id: "contact", expectedTop: 1 },
   ];
 
   for (const target of targets) {
-    await page.goto("/");
+    await page.goto("/sv/3d-visningar");
     const link = page.locator(".site-header").getByRole("link", { name: target.name, exact: true });
     await link.click();
-    await expect(page).toHaveURL(new RegExp(`/#${target.id}$`));
+    await expect(page).toHaveURL(new RegExp(`/sv#${target.id}$`));
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(500);
     await expect.poll(
       () => page.locator(`#${target.id}`).evaluate(
@@ -383,7 +383,7 @@ test("cross-route header links land on their home sections", async ({ page }) =>
 });
 
 test("closing particle field remains directly interactive", async ({ page }) => {
-  await page.goto("/#contact");
+  await page.goto("/sv#contact");
   const signalField = page.locator(".closing-swarm-field");
   await signalField.scrollIntoViewIfNeeded();
   await signalField.click({ position: { x: 120, y: 280 } });
@@ -391,7 +391,7 @@ test("closing particle field remains directly interactive", async ({ page }) => 
 });
 
 test("skip link moves actual focus to the home main content", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/sv");
 
   const skipLink = page.getByRole("link", { name: /Hoppa till innehållet/ });
   await page.keyboard.press("Tab");
@@ -403,7 +403,7 @@ test("skip link moves actual focus to the home main content", async ({ page }) =
 
 test("keyboard reaches home reveals and completes them without manual scrolling", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
-  await page.goto("/");
+  await page.goto("/sv");
 
   const hiddenFocusableReveals = await page.locator("[data-reveal]").evaluateAll((elements) =>
     elements
@@ -417,11 +417,11 @@ test("keyboard reaches home reveals and completes them without manual scrolling"
   await page.keyboard.press("Enter");
   await expect(page.locator("main#main-content")).toBeFocused();
 
-  const processButton = page.getByRole("button", { name: /Riktning/ });
+  const processButton = page.getByRole("button", { name: /Kartläggning/ });
   await tabUntilFocused(page, processButton, 6);
   await expectFocusedRevealToBeComplete(processButton);
 
-  const founderCta = page.getByRole("link", { name: /Prata projekt/ });
+  const founderCta = page.getByRole("link", { name: "Kontakta mig" });
   await tabUntilFocused(page, founderCta, 12);
   await expectFocusedRevealToBeComplete(founderCta);
 

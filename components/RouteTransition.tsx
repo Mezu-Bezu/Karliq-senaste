@@ -2,19 +2,14 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { pagePath, type Locale } from "../lib/site";
 import styles from "./RouteTransition.module.css";
 
 type Phase = "hidden" | "cover" | "hold" | "reveal";
 
-const PREFETCH_ROUTES = ["/"] as const;
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 const ROUTE_TIMEOUT = 8_000;
 const COVER_DURATION = 640;
-
-function routeLabel(pathname: string) {
-  if (pathname === "/") return "KARLIQ";
-  return "KARLIQ";
-}
 
 function prepareHashTarget(hash: string) {
   if (!hash) return;
@@ -85,7 +80,7 @@ function focusDestination(hash: string, preserveScroll: boolean) {
   }
 }
 
-export default function RouteTransition() {
+export default function RouteTransition({ locale }: { locale: Locale }) {
   const router = useRouter();
   const pathname = usePathname();
   const previousPathRef = useRef(pathname);
@@ -99,7 +94,6 @@ export default function RouteTransition() {
   const keyboardNavigationRef = useRef(false);
   const phaseRef = useRef<Phase>("hidden");
   const [phase, setPhaseState] = useState<Phase>("hidden");
-  const [label, setLabel] = useState("KARLIQ");
   const [announcement, setAnnouncement] = useState("");
 
   const setPhase = (next: Phase) => {
@@ -118,7 +112,7 @@ export default function RouteTransition() {
 
   useEffect(() => {
     const prefetchTimer = window.setTimeout(() => {
-      for (const route of PREFETCH_ROUTES) {
+      for (const route of [pagePath(locale), pagePath(locale, "tour")]) {
         if (route !== window.location.pathname) router.prefetch(route);
       }
     }, 120);
@@ -170,8 +164,7 @@ export default function RouteTransition() {
       clearNavigationTimers();
       pendingUrlRef.current = nextUrl;
       transitionStartedAtRef.current = performance.now();
-      setLabel(routeLabel(nextUrl.pathname));
-      setAnnouncement(`Öppnar ${routeLabel(nextUrl.pathname).toLocaleLowerCase("sv-SE")}.`);
+      setAnnouncement(locale === "sv" ? "Öppnar sidan." : "Opening page.");
       setPhase("cover");
 
       const href = `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
@@ -256,7 +249,7 @@ export default function RouteTransition() {
       document.removeEventListener("pointerdown", onPointerDown, true);
       window.removeEventListener("pageshow", onPageShow);
     };
-  }, [router]);
+  }, [router, locale]);
 
   useEffect(() => {
     if (pathname === previousPathRef.current) return;
@@ -307,8 +300,7 @@ export default function RouteTransition() {
           <div className={styles.grain} />
 
           <div className={styles.copy}>
-            <span>KARLIQ / VIDARE</span>
-            <strong>{label}</strong>
+            <strong>KARLIQ</strong>
           </div>
 
           <svg

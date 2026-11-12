@@ -1,16 +1,27 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { Locale } from "../lib/site";
 import { gsap, prefersReducedMotion, registerMotion, ScrollTrigger } from "./motion";
 import styles from "./SignatureBridge.module.css";
 
-const stages = [
-  { number: "01", label: "Idé" },
-  { number: "02", label: "Form" },
-  { number: "03", label: "Kod" },
-] as const;
+const bridge = {
+  sv: {
+    title: ["System som", "hänger ihop."],
+    labels: ["In", "Flöde", "Ut"],
+    artifactLabels: ["Förfrågan", "Automation", "Uppföljning"],
+    controls: "Visa stegen i flödet",
+  },
+  en: {
+    title: ["Tools that", "work together."],
+    labels: ["Input", "Flow", "Output"],
+    artifactLabels: ["Enquiry", "Automation", "Follow-up"],
+    controls: "Show the steps in the workflow",
+  },
+};
 
-export default function SignatureBridge() {
+export default function SignatureBridge({ locale }: { locale: Locale }) {
+  const text = bridge[locale];
   const rootRef = useRef<HTMLElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const routeRef = useRef<SVGPathElement>(null);
@@ -71,20 +82,17 @@ export default function SignatureBridge() {
       selectStage(1);
       placeCarrier(0.52);
       gsap.set("[data-bridge-line]", { yPercent: 0 });
-      gsap.set("[data-bridge-kicker]", { opacity: 1, y: 0 });
       return;
     }
 
     const context = gsap.context(() => {
       gsap.set("[data-bridge-line]", { yPercent: 140 });
-      gsap.set("[data-bridge-kicker]", { opacity: 0, y: 18 });
       gsap.set("[data-bridge-exit]", { yPercent: 105 });
 
       const timeline = gsap
         .timeline()
         .to("[data-bridge-entry]", { yPercent: -112, duration: 0.14, ease: "power2.inOut" }, 0)
         .to("[data-bridge-line]", { yPercent: 0, duration: 0.18, stagger: 0.035, ease: "power3.out" }, 0.06)
-        .to("[data-bridge-kicker]", { opacity: 1, y: 0, duration: 0.12, ease: "power2.out" }, 0.1)
         .to("[data-bridge-title]", { xPercent: 2.2, duration: 0.72, ease: "none" }, 0.2)
         .to("[data-bridge-title='reverse']", { xPercent: -4.4, duration: 0.72, ease: "none" }, 0.2)
         .to("[data-bridge-loop]", { rotate: 205, scale: 1.13, duration: 0.72, ease: "none" }, 0.18)
@@ -210,19 +218,18 @@ export default function SignatureBridge() {
         <div className={styles.grain} aria-hidden="true" />
 
         <header className={styles.heading}>
-          <p data-bridge-kicker>En lösning som hänger ihop</p>
           <h2 id="signature-bridge-title">
             <span className={styles.lineMask}>
               <span data-bridge-line style={{ display: "inline-block" }}>
                 <span data-bridge-title style={{ display: "inline-block" }}>
-                  Från idé.
+                  {text.title[0]}
                 </span>
               </span>
-            </span>
+            </span>{" "}
             <span className={styles.lineMask}>
               <span data-bridge-line style={{ display: "inline-block" }}>
                 <span data-bridge-title="reverse" style={{ display: "inline-block" }}>
-                  Till vardag.
+                  {text.title[1]}
                 </span>
               </span>
             </span>
@@ -231,7 +238,7 @@ export default function SignatureBridge() {
 
         <div className={styles.pointerField} ref={pointerFieldRef} aria-hidden="true">
           <div className={`${styles.artifact} ${styles.sketch}`} data-active={active === 0}>
-            <span>IDÉ / 01</span>
+            <span>{text.artifactLabels[0]}</span>
             <svg viewBox="0 0 180 160" fill="none">
               <path d="M25 116C41 62 73 27 145 35C118 46 95 75 80 130" />
               <path d="M44 103C78 93 105 98 143 124" />
@@ -240,7 +247,7 @@ export default function SignatureBridge() {
           </div>
 
           <div className={`${styles.artifact} ${styles.motion}`} data-active={active === 1}>
-            <span>FORM / 02</span>
+            <span>{text.artifactLabels[1]}</span>
             <div className={styles.loop} data-bridge-loop>
               <i />
               <i />
@@ -249,12 +256,12 @@ export default function SignatureBridge() {
           </div>
 
           <div className={`${styles.artifact} ${styles.code}`} data-active={active === 2}>
-            <span>KOD / 03</span>
+            <span>{text.artifactLabels[2]}</span>
             <div>
-              <i>&lt;main&gt;</i>
-              <i>&nbsp;&nbsp;motion=&quot;true&quot;</i>
-              <i>&nbsp;&nbsp;idea=&quot;intact&quot;</i>
-              <i>&lt;/main&gt;</i>
+              <i>&lt;enquiry&gt;</i>
+              <i>&nbsp;&nbsp;source=&quot;web&quot;</i>
+              <i>&nbsp;&nbsp;status=&quot;assigned&quot;</i>
+              <i>&lt;/enquiry&gt;</i>
             </div>
           </div>
         </div>
@@ -288,11 +295,11 @@ export default function SignatureBridge() {
           </g>
         </svg>
 
-        <div className={styles.stageControls} role="group" aria-label="Visa stegen från idé till kod">
-          {stages.map((item, index) => (
+        <div className={styles.stageControls} role="group" aria-label={text.controls}>
+          {text.labels.map((label, index) => (
             <button
               type="button"
-              key={item.label}
+              key={label}
               aria-pressed={active === index}
               tabIndex={active === index ? 0 : -1}
               onClick={() => chooseStage(index)}
@@ -300,28 +307,24 @@ export default function SignatureBridge() {
               onKeyDown={(event) => {
                 if (event.key === "ArrowRight" || event.key === "ArrowDown") {
                   event.preventDefault();
-                  moveStageFocus((index + 1) % stages.length);
+                  moveStageFocus((index + 1) % text.labels.length);
                 } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
                   event.preventDefault();
-                  moveStageFocus((index - 1 + stages.length) % stages.length);
+                  moveStageFocus((index - 1 + text.labels.length) % text.labels.length);
                 } else if (event.key === "Home") {
                   event.preventDefault();
                   moveStageFocus(0);
                 } else if (event.key === "End") {
                   event.preventDefault();
-                  moveStageFocus(stages.length - 1);
+                  moveStageFocus(text.labels.length - 1);
                 }
               }}
             >
-              <span>{item.number}</span>
-              {item.label}
+              <span aria-hidden="true">0{index + 1}</span>
+              {label}
             </button>
           ))}
         </div>
-
-        <p className={styles.srOnly}>
-          Idé, form och teknik blir en lösning att använda i vardagen.
-        </p>
       </div>
     </section>
   );

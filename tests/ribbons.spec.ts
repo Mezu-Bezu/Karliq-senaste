@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("a single travelling stroke follows forward and reverse scrolling after the hero", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/sv");
   await expect(page.locator("#top [data-scroll-ribbons]")).toHaveCount(0);
   const ribbon = page.locator("[data-scroll-ribbons]");
   const path = ribbon.locator("path");
@@ -20,7 +20,7 @@ test("a single travelling stroke follows forward and reverse scrolling after the
 
 test("reduced motion keeps the single stroke static", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/");
+  await page.goto("/sv");
   const path = page.locator("[data-scroll-ribbons] path");
   await expect(path).toHaveAttribute("d", /^M/);
   const before = await path.getAttribute("style");
@@ -32,7 +32,7 @@ for (const width of [390, 1280]) {
   test(`ribbon crosses the section boundary without clipping at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.goto('/');
+    await page.goto('/sv');
     const approach = page.locator('#approach');
     const path = page.locator('[data-scroll-ribbons] path');
     await expect(path).toHaveAttribute('d', /^M/);
@@ -58,7 +58,7 @@ for (const width of [390, 1280]) {
 }
 
 test('the device stays still while the visible ribbon advances with scrolling', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/sv');
   const device = page.locator('.manifesto-window');
   const path = page.locator('[data-scroll-ribbons] path');
   await expect(path).toHaveAttribute('d', /^M/);
@@ -79,7 +79,7 @@ test('the device stays still while the visible ribbon advances with scrolling', 
 
 test('equal scroll distances reveal equal ribbon lengths through the loops', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.goto('/');
+  await page.goto('/sv');
   await page.evaluate(() => document.fonts.ready);
   const path = page.locator('[data-scroll-ribbons] path');
   await expect(path).toHaveAttribute('d', /^M/);

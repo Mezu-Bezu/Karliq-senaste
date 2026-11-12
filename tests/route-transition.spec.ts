@@ -14,7 +14,7 @@ test("route mask stays hidden on initial load without overflow or hydration erro
   page.on("pageerror", (error) => errors.push(error.message));
 
   await page.setViewportSize({ width: 320, height: 700 });
-  await page.goto("/");
+  await page.goto("/sv");
   await expectTransitionSettled(page);
 
   const dimensions = await page.evaluate(() => ({
@@ -26,16 +26,16 @@ test("route mask stays hidden on initial load without overflow or hydration erro
 });
 
 test("same-page hashes bypass the route mask", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/sv");
   await expectTransitionSettled(page);
 
-  await page.locator(".site-header").getByRole("link", { name: "Process" }).click();
-  await expect(page).toHaveURL(/#method$/);
+  await page.locator(".site-header").getByRole("link", { name: "Tjänster" }).click();
+  await expect(page).toHaveURL(/#services$/);
   await expectTransitionSettled(page);
 });
 
 test("external, utility, modified, target and download clicks bypass the mask", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/sv");
   await expectTransitionSettled(page);
 
   await page.evaluate(() => {
@@ -62,5 +62,5 @@ test("external, utility, modified, target and download clicks bypass the mask", 
   });
 
   await expectTransitionSettled(page);
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/sv$/);
 });

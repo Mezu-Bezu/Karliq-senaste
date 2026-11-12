@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Karliq",
     short_name: "Karliq",
-    description: "Digital design, motion, smart automation, AI och utveckling från Karliq i Jönköpings län.",
+    description: "Automation och webbutveckling för företag.",
     start_url: "/",
     display: "standalone",
     background_color: "#faf8ff",

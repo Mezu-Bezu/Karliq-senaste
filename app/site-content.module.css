@@ -1,0 +1,338 @@
+.offerAndWork {
+  padding: clamp(5rem, 10vw, 10rem) var(--page-gutter);
+  background: #f6f0fd;
+}
+
+.offer,
+.work,
+.detailInner,
+.smallFooter {
+  width: min(100%, 76rem);
+  margin-inline: auto;
+}
+
+.offer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(17rem, 27rem);
+  align-items: start;
+  gap: clamp(1.25rem, 5vw, 5rem);
+}
+
+.offer h2,
+.work h2,
+.detailPage h1 {
+  margin: 0;
+  font-weight: 450;
+  letter-spacing: -.065em;
+  line-height: 1;
+}
+
+.offer h2 {
+  font-size: clamp(2.45rem, 6vw, 6.8rem);
+}
+
+.offer p {
+  margin: 0 0 1rem;
+  font-size: clamp(1.1rem, 1.75vw, 1.42rem);
+  line-height: 1.5;
+}
+
+.textLink,
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: .65rem;
+  min-height: 2.75rem;
+  color: #5019a2;
+  font-weight: 650;
+  text-decoration: underline;
+  text-decoration-color: #9469c9;
+  text-underline-offset: .3em;
+}
+
+.textLink span,
+.backLink span {
+  transition: transform 300ms var(--ease-out);
+}
+
+.textLink[data-micro-active] span {
+  transform: translate(.22rem, -.18rem);
+}
+
+.backLink[data-micro-active] span {
+  transform: translateX(-.28rem);
+}
+
+.work {
+  padding-top: clamp(4.5rem, 8vw, 7rem);
+  margin-top: clamp(4.5rem, 8vw, 7rem);
+  border-top: 1px solid #d9c9eb;
+  scroll-margin-top: 5rem;
+}
+
+.work h2 {
+  margin-bottom: 1.5rem;
+  font-size: clamp(2.3rem, 5vw, 4.4rem);
+}
+
+.projectCard {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 1rem;
+  min-height: clamp(13rem, 25vw, 20rem);
+  padding: clamp(1.25rem, 4vw, 3.25rem);
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid #4d3672;
+  border-radius: clamp(.8rem, 1.6vw, 1.4rem);
+  background: #1c102e;
+  color: #fbf6ff;
+}
+
+.projectCard::before,
+.projectCard::after {
+  position: absolute;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+}
+
+.projectCard::before {
+  inset: 0;
+  background: radial-gradient(25rem at var(--micro-x, 75%) var(--micro-y, 30%), #4a2878, transparent 78%);
+  opacity: .55;
+  transition: opacity 350ms var(--ease-out);
+}
+
+.projectCard::after {
+  top: -90%;
+  right: -12%;
+  width: min(72%, 44rem);
+  aspect-ratio: 1;
+  border: 1px solid #9d7bc875;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5rem #b79add13, 0 0 0 4rem #b79add0a;
+  transform: rotateX(32deg) rotate(-26deg);
+}
+
+.projectText h3 {
+  max-width: 17ch;
+  margin: 0;
+  font-size: clamp(1.95rem, 4.5vw, 4.5rem);
+  font-weight: 480;
+  letter-spacing: -.055em;
+  line-height: 1.05;
+}
+
+.projectText p {
+  max-width: 38ch;
+  margin: .85rem 0 0;
+  color: #e5d5f9;
+  font-size: clamp(.97rem, 1.4vw, 1.2rem);
+  line-height: 1.45;
+}
+
+.projectArrow {
+  display: grid;
+  width: clamp(2.75rem, 5.2vw, 4.7rem);
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid #bda1df;
+  border-radius: 50%;
+  color: #fff;
+  font-size: clamp(1.25rem, 2.2vw, 2.15rem);
+  line-height: 1;
+  transition: transform 340ms var(--ease-out), background-color 240ms ease, color 240ms ease;
+}
+
+.projectCard[data-micro-active]::before {
+  opacity: 1;
+}
+
+.projectCard[data-micro-active] .projectArrow,
+.projectCard:focus-visible .projectArrow {
+  transform: translate(.2rem, -.24rem);
+  background: #f1e3ff;
+  color: #221334;
+}
+
+.projectCard[data-micro-pressed] .projectArrow {
+  transform: scale(.94);
+}
+
+.closingLegal {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid rgb(247 250 246 / 36%);
+  pointer-events: none;
+}
+
+.closingLegal a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding-inline: .8rem;
+  font-size: .8rem;
+  text-decoration: underline;
+  text-underline-offset: .28em;
+  pointer-events: auto;
+  transition: background-color 230ms ease;
+}
+
+.closingLegal a[data-micro-active] {
+  background: #ffffff20;
+}
+
+.detailPage {
+  display: flex;
+  min-height: 100svh;
+  flex-direction: column;
+  padding: clamp(7.2rem, 15vw, 10rem) var(--page-gutter) 0;
+  background: #f6f0fd;
+  color: var(--ink);
+}
+
+.detailInner {
+  flex: 1;
+}
+
+.backLink {
+  margin-bottom: clamp(1.5rem, 4vw, 3rem);
+}
+
+.detailPage h1 {
+  max-width: 13ch;
+  font-size: clamp(3rem, 6.9vw, 7.1rem);
+}
+
+.tourDetail {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(2.5rem, 6vw, 6rem);
+  padding-bottom: clamp(4rem, 9vw, 8rem);
+}
+
+.detailLead {
+  max-width: 37ch;
+  margin: 1.7rem 0 1.25rem;
+  font-size: clamp(1.15rem, 1.85vw, 1.5rem);
+  line-height: 1.52;
+}
+
+.projectUpdate {
+  margin: 0 0 .6rem;
+  color: #554168;
+  line-height: 1.5;
+}
+
+.tourIllustration {
+  position: relative;
+  display: grid;
+  min-height: 16rem;
+  aspect-ratio: 1;
+  place-items: center;
+  overflow: hidden;
+  border-radius: clamp(.8rem, 1.6vw, 1.4rem);
+  background: radial-gradient(ellipse at 50% 57%, #624097, #251438 72%);
+  perspective: 32rem;
+}
+
+.tourIllustration span {
+  grid-area: 1 / 1;
+  width: 68%;
+  aspect-ratio: 1.3;
+  border: 1px solid #d5b8f1;
+  border-radius: .25rem;
+  transform: rotateY(-29deg) rotateZ(-6deg);
+}
+
+.tourIllustration span:nth-child(2) {
+  width: 50%;
+  transform: translateX(-8%) rotateY(-29deg) rotateZ(-6deg);
+}
+
+.tourIllustration span:nth-child(3) {
+  width: 32%;
+  transform: translateX(-26%) rotateY(-29deg) rotateZ(-6deg);
+}
+
+.privacy {
+  max-width: 44rem;
+  padding-bottom: clamp(4rem, 9vw, 8rem);
+}
+
+.privacy h1 {
+  margin-bottom: clamp(2.5rem, 6vw, 4rem);
+}
+
+.privacy section {
+  padding-top: 1.45rem;
+  margin-top: 1.6rem;
+  border-top: 1px solid #d9c9eb;
+}
+
+.privacy h2 {
+  margin: 0 0 .7rem;
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  font-weight: 570;
+  letter-spacing: -.035em;
+}
+
+.privacy p {
+  margin: 0 0 .85rem;
+  font-size: 1.04rem;
+  line-height: 1.65;
+}
+
+.privacy a,
+.smallFooter a {
+  color: #5019a2;
+  text-decoration: underline;
+  text-underline-offset: .24em;
+}
+
+.smallFooter,
+.smallFooter div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .8rem 1.75rem;
+  justify-content: space-between;
+}
+
+.smallFooter {
+  align-items: center;
+  padding: 1.4rem 0;
+  border-top: 1px solid #d9c9eb;
+  font-size: .9rem;
+}
+
+@media (max-width: 760px) {
+  .offer,
+  .tourDetail {
+    grid-template-columns: 1fr;
+  }
+
+  .tourIllustration {
+    min-height: 0;
+    aspect-ratio: 1.65;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .projectCard::before,
+  .projectArrow,
+  .textLink span,
+  .backLink span,
+  .closingLegal a {
+    transition: none;
+  }
+
+  .projectCard:focus-visible .projectArrow {
+    transform: none;
+  }
+}

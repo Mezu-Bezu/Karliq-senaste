@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 export type HeroDeviceMotion = {
   x: number;
@@ -20,9 +20,21 @@ const SignalLoomScene = dynamic(() => import("./SignalLoomScene"), {
   loading: () => null,
 });
 
+const fallbackJoints = [
+  { x: 61, y: 28, angle: -24, scale: .7, color: "clay" },
+  { x: 89, y: 31, angle: 21, scale: .8, color: "bone" },
+  { x: 72, y: 43, angle: 33, scale: 1, color: "clay" },
+  { x: 97, y: 49, angle: -14, scale: .55, color: "graphite" },
+  { x: 86, y: 57, angle: -35, scale: 1.2, color: "clay" },
+  { x: 63, y: 64, angle: 18, scale: .65, color: "bone" },
+  { x: 75, y: 73, angle: -10, scale: .6, color: "graphite" },
+  { x: 91, y: 78, angle: 41, scale: .7, color: "bone" },
+] as const;
+
 export default function HeroVisual() {
   const rootRef = useRef<HTMLDivElement>(null);
-  const [enhanced, setEnhanced] = useState(false);
+  const [visualSupport, setVisualSupport] = useState<"checking" | "webgl" | "fallback">("checking");
+  const enhanced = visualSupport === "webgl";
   const [active, setActive] = useState(true);
   const [ready, setReady] = useState(false);
   const [mobile, setMobile] = useState(false);
@@ -43,7 +55,7 @@ export default function HeroVisual() {
 
     const update = () => {
       setMobile(narrow.matches);
-      setEnhanced(supportsWebGl && !reduced.matches);
+      setVisualSupport(supportsWebGl && !reduced.matches ? "webgl" : "fallback");
       if (reduced.matches) setReady(false);
     };
 
@@ -274,7 +286,7 @@ export default function HeroVisual() {
     <div
       className="hero-world"
       ref={rootRef}
-      data-visual-mode={enhanced && ready ? "webgl" : "loading"}
+      data-visual-mode={enhanced && ready ? "webgl" : visualSupport === "fallback" ? "fallback" : "loading"}
       aria-hidden="true"
     >
       {enhanced ? (
@@ -285,6 +297,23 @@ export default function HeroVisual() {
           onReady={() => setReady(true)}
         />
       ) : null}
+      <div className="static-loom" data-hidden={enhanced && ready}>
+        <div className="static-word">
+          {Array.from("KARLIQ", (letter) => <span key={letter}>{letter}</span>)}
+        </div>
+        {fallbackJoints.map(({ x, y, angle, scale, color }) => (
+          <span
+            key={x}
+            className={`static-joint static-joint-${color}`}
+            style={{
+              "--joint-left": `${x}%`,
+              "--joint-top": `${y}%`,
+              "--joint-rotation": `${angle}deg`,
+              "--joint-scale": scale,
+            } as CSSProperties}
+          ><i /></span>
+        ))}
+      </div>
       <div className="hero-atmosphere" />
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
+import type { Locale } from "../lib/site";
 import { gsap, registerMotion, usePrefersReducedMotion } from "./motion";
 import { logoBricks } from "./logoBricks";
 import styles from "./AgencyServices.module.css";
@@ -11,7 +12,8 @@ const wallBricks = Array.from({ length: 240 }, (_, index) => ({
 }));
 const transitionBricks = Array.from({ length: 64 }, (_, index) => ({ col: index % 16, row: Math.floor(index / 16) }));
 
-export default function AgencyServices() {
+export default function AgencyServices({ locale }: { locale: Locale }) {
+  const swedish = locale === "sv";
   const root = useRef<HTMLElement>(null);
   const transitionWall = useRef<HTMLDivElement>(null);
   const [transitionHost, setTransitionHost] = useState<HTMLElement | null>(null);
@@ -49,15 +51,27 @@ export default function AgencyServices() {
           3 + (3 - block.row) * .15 + (block.col % 4) * .035);
       });
     }, section);
-    let inView = false;
     const update = () => {
-      if (inView && !document.hidden) { section.dataset.build = timeline?.progress() === 1 ? "complete" : "playing"; timeline?.play(); }
-      else timeline?.pause();
+      if (timeline.progress() === 1) return;
+      const { top, bottom } = section.getBoundingClientRect();
+      if (!document.hidden && top < window.innerHeight && bottom > 0) {
+        section.dataset.build = "playing";
+        timeline.play();
+      } else {
+        timeline.pause();
+      }
     };
-    const observer = new IntersectionObserver(([entry]) => { inView = entry.isIntersecting; update(); }, { threshold: .25 });
-    observer.observe(section);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
     document.addEventListener("visibilitychange", update);
-    return () => { observer.disconnect(); document.removeEventListener("visibilitychange", update); context.revert(); delete section.dataset.build; };
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+      document.removeEventListener("visibilitychange", update);
+      context.revert();
+      delete section.dataset.build;
+    };
   }, [reduced, transitionHost]);
 
   return (
@@ -84,12 +98,20 @@ export default function AgencyServices() {
           ))}
         </div>
         <header className={`agency-services-head ${styles.heading}`}>
-          <span className={styles.eyebrow}>Automation</span>
-          <h2 id="services-title">Jag kopplar ihop<br />dina verktyg.</h2>
-          <p>Eller bygger ett nytt. Så att du slipper flytta information, följa upp och göra samma sak för hand.</p>
-          <a href="#contact" className={styles.cta}>Berätta vad som tar tid <span aria-hidden="true">↗</span></a>
+          <span className={styles.eyebrow}>{swedish ? "Automation" : "Business automation"}</span>
+          <h2 id="services-title">
+            {swedish ? <>Jag kopplar ihop<br />dina verktyg.</> : <>I connect<br />your tools.</>}
+          </h2>
+          <p>
+            {swedish
+              ? "Slipp kopiera uppgifter mellan system. Jag bygger flöden som sköter uppföljning, bokningar och rapporter automatiskt."
+              : "Stop copying data between systems. I build workflows that handle follow-ups, bookings and reports automatically."}
+          </p>
+          <a href="#contact" className={styles.cta} data-micro>
+            {swedish ? "Berätta vad som tar tid" : "Tell me what takes up your time"} <span aria-hidden="true">↗</span>
+          </a>
         </header>
-        <div className={styles.visual} role="img" aria-label="Karliq-loggan och bakgrunden byggs automatiskt av fallande legoklossar.">
+        <div className={styles.visual} aria-hidden="true">
           <div className={styles.logo} data-brick-logo>
             {logoBricks.map((block, index) => (
               <div key={index} className={styles.brick} data-automation-brick

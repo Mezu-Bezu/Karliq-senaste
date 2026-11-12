@@ -9,8 +9,8 @@
 .heading.heading h2 { max-width: 11ch; margin: 0; padding: .12em .1em .17em 0; font-size: clamp(3.3rem, 5.2vw, 6.3rem); font-weight: 440; line-height: 1.06; letter-spacing: -.065em; }
 .heading.heading > p { max-width: 32ch; margin: 1.5rem 0 2.3rem; font-size: clamp(1rem, 1.2vw, 1.15rem); line-height: 1.65; color: inherit; opacity: .8; }
 .cta { display: inline-flex; align-items: center; gap: 2rem; border-bottom: 1px solid #b4a7c2; padding: .8rem 0; font-size: .85rem; }
-.cta span { font-size: 1.3rem; transition: transform .3s; }
-.cta:hover span { transform: translate(3px, -3px); }
+.cta span { font-size: 1.3rem; transition: transform .3s var(--ease-out); }
+.cta[data-micro-active] span { transform: translate(3px, -3px); }
 .cta:focus-visible { outline: 2px solid #6d28d9; outline-offset: 6px; }
 .visual { position: absolute; z-index: 1; right: 2%; top: 0; width: 53%; height: 100%; pointer-events: none; }
 .logo { position: absolute; top: 50%; left: 50%; width: 624px; height: 390px; transform: translate(-50%, -40%) rotate(-5deg); }

@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Karliq, webbstudio i Jönköpings län";
+export const alt = "Karliq";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -42,17 +42,15 @@ export default function Image() {
           </svg>
           <span>KARLIQ</span>
         </div>
-        <span style={{ color: "#6d28d9" }}>DIGITAL STUDIO / JÖNKÖPINGS LÄN</span>
       </div>
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 70 }}>
         <div style={{ display: "flex", flexDirection: "column", fontSize: 105, lineHeight: 0.83, letterSpacing: "-8px", fontWeight: 500 }}>
-          <span>Starka idéer.</span>
-          <span style={{ color: "#6d28d9" }}>Satta i rörelse.</span>
+          <span>Automation</span>
+          <span style={{ color: "#6d28d9" }}>Web development</span>
         </div>
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", borderTop: "2px solid rgba(109,40,217,.18)", paddingTop: 18, fontSize: 19 }}>
-        <span>DESIGN / MOTION / AUTOMATION / DEVELOPMENT</span>
-        <span style={{ color: "#6d28d9" }}>KARLIQ.ME</span>
+        <span style={{ color: "#6d28d9" }}>KARLIQ.SE</span>
       </div>
     </div>,
     size,

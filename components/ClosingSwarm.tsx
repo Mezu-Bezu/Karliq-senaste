@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import type { Locale } from "../lib/site";
 
 type ClosingSwarmProps = {
   className?: string;
+  locale: Locale;
 };
 
 type SwarmParticle = {
@@ -60,7 +62,25 @@ const MAX_DPR = 1.6;
 const WHITE = "#fcf7ff";
 const MINT = "#e9d5ff";
 
-export default function ClosingSwarm({ className = "" }: ClosingSwarmProps) {
+const fieldCopy = {
+  sv: {
+    label: "Interaktivt partikelfält",
+    hint: "Tryck för att skapa en våg",
+    still: "Stilla partikelfält",
+    instructions: "Dra över fältet för att forma partiklarna. Tryck på fältet eller använd Enter för att skapa en våg.",
+    wave: (count: number) => `Våg ${count} skapad.`,
+  },
+  en: {
+    label: "Interactive particle field",
+    hint: "Tap to make a wave",
+    still: "Still particle field",
+    instructions: "Move across the field to shape the particles. Tap the field or press Enter to make a wave.",
+    wave: (count: number) => `Wave ${count} created.`,
+  },
+};
+
+export default function ClosingSwarm({ className = "", locale }: ClosingSwarmProps) {
+  const text = fieldCopy[locale];
   const rootRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const instructionId = useId();
@@ -400,7 +420,7 @@ export default function ClosingSwarm({ className = "" }: ClosingSwarmProps) {
       ref={rootRef}
       className={classes}
       role="region"
-      aria-label="Interaktivt partikelfält"
+      aria-label={text.label}
       aria-describedby={instructionId}
       data-reduced-motion={reducedMotion ? "true" : "false"}
       tabIndex={reducedMotion ? -1 : 0}
@@ -408,20 +428,18 @@ export default function ClosingSwarm({ className = "" }: ClosingSwarmProps) {
       <canvas ref={canvasRef} className="closing-swarm__canvas" aria-hidden="true" />
 
       <span className="closing-swarm__hint" aria-hidden="true">
-        {reducedMotion ? "Stilla fält" : "Rör fältet · tryck för våg"}
+        {!reducedMotion && text.hint}
       </span>
 
       <p id={instructionId} className="closing-swarm__sr-only">
-        {reducedMotion
-          ? "Ett dekorativt partikelfält visas i stilla läge eftersom reducerad rörelse är aktiverad."
-          : "Dra med pekare eller touch över fältet för att forma partiklarna. Tryck på fältet, eller fokusera det och tryck Enter, för att skapa en våg."}
+        {reducedMotion ? text.still : text.instructions}
       </p>
       <p
         className="closing-swarm__sr-only"
         aria-live="polite"
         aria-atomic="true"
       >
-        {waveCount > 0 ? `Våg ${waveCount} skapad.` : ""}
+        {waveCount > 0 ? text.wave(waveCount) : ""}
       </p>
 
       <style>{`
